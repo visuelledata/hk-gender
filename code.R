@@ -31,43 +31,33 @@ pop %>%
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') + 
   facet_wrap(~nationality, scale = 'free_y') #add this as an interactive graph
   
-  
-pop %>%  
-  filter(age_range != '0 - 4' & age_range != '80 - 84' & age_range != '85+') %>%
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population)) %>% 
-  mutate(prop = population / sum(population)) %>% 
-  ggplot() + 
-  geom_col(aes(x = age_range, y = prop, fill = sex, width = .85), position = 'dodge') + 
-  geom_text(aes(x = age_range, y = prop, fill = sex, label = percent(prop)), position = position_dodge(width = .9), vjust = .2, hjust = 1.1,size = 3, color = 'Grey70') +
-  scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
-  scale_fill_manual(values = c('Red', 'Blue')) +
-  geom_hline(yintercept = .504, color = 'Grey', alpha = .7) + 
-  theme_pub() +
-  no_gridlines() + 
-  no_x_axis() +
-  no_x_line() +
-  no_legend() +
-  no_ticks() +
-  coord_flip()
-  
 
+sex.scale <- c("female" = "red", "male" = "blue")
 
 pop %>%  
   filter(age_range != '0 - 4' & age_range != '80 - 84' & age_range != '85+') %>%
   group_by(age_range, sex) %>% 
   summarize(population = sum(population)) %>% 
   mutate(prop = population / sum(population)) %>% 
-  ggplot() + 
-  geom_col(aes(x = age_range, y = prop, group = sex, fill = prop >= .504 & sex == 'female' & age_range != '75 - 79', width = .85), position = 'dodge') + 
-  scale_fill_manual(values = c('Grey', 'Grey', 'Blue', 'Red')) + 
-  no_legend() +
-  geom_text(aes(x = age_range, y = prop, fill = sex, label = percent(prop)), position = position_dodge(width = .9), vjust = .2, hjust = 1.1,size = 3, color = 'White') +
+  mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79') %>%
+  mutate(condition = any(condition)) %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) + 
+  geom_col(position = "dodge", fill = "grey60") +
+  geom_col(aes(fill = sex, alpha = condition), position = "dodge") +
+  scale_color_manual(values = sex.scale) +
+  scale_fill_manual(values = sex.scale, guide = F) +
+  scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0)) + 
+  geom_text(aes(x = age_range, y = prop, fill = sex, label = percent(prop)), position = position_dodge(width = .9), vjust = .358, hjust = 1.1,size = 4, color = 'White') +
   scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
-  geom_hline(yintercept = .504, color = 'Grey', alpha = .7) + coord_flip()
+  geom_hline(yintercept = .504, color = 'White') + 
+  coord_flip()+
   theme_pub() +
   no_gridlines() + 
   no_x_axis() +
   no_x_line() +
   no_ticks() +
-  coord_flip()
+  coord_flip() + 
+  no_legend() + 
+  labs(x = '', y = '')
+
+
