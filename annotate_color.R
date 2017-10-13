@@ -28,20 +28,21 @@ pop %>%
   ggplot() + 
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') +
   annotate_color('I go to school today and have fun', c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'purple', 'red'))
-  
-  
-  annotate('text', x = 3, y = .03, parse = T,label = '"I " * phantom("go to school today")', color = NA) + 
+
+
+annotate('text', x = 3, y = .03, parse = T,label = '"I " * phantom("go to school today")', color = NA) + 
   annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I ") * "go" * phantom("to school today")', color = 'Blue') +
   annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I go ") * "to" * phantom("school today")', color = 'Green') +
   annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I go to ") * "school" * phantom("today")', color = 'Purple') +
   annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I go to school ") * "today"', color = 'Orange') +
   temp(labels = c('bob', 'builder'), colors = c('red', 'blue'))
-  
 
 
 
+#add more fields
+#font size, font face?
 annotate_color <- function(labels = NULL, colors = NULL){
-  label_maker <- function(labels){
+  label_maker <- function(labels){ #label_maker created with help of https://stackoverflow.com/users/3521006/docendo-discimus
     x <- strsplit(labels, " ")[[1]]
     n <- length(x)
     
@@ -69,4 +70,3 @@ annotate_color <- function(labels = NULL, colors = NULL){
   }
   return(annos)
 }
-
