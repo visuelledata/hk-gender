@@ -27,7 +27,9 @@ pop %>%
             prop = sum(prop)) %>% 
   ggplot() + 
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') +
-  annotate_color('I go to school today and have fun', c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'purple', 'red'))
+  annotate_color(x = 3, y = .05,
+    labels = 'I go to school today and have fun', 
+    colors = c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'purple', 'red'))
 
 
 annotate('text', x = 3, y = .03, parse = T,label = '"I " * phantom("go to school today")', color = NA) + 
@@ -38,35 +40,38 @@ annotate('text', x = 3, y = .03, parse = T,label = '"I " * phantom("go to school
   temp(labels = c('bob', 'builder'), colors = c('red', 'blue'))
 
 
-
+#label_maker created with help of https://stackoverflow.com/users/3521006/docendo-discimus
 #add more fields
 #font size, font face?
-annotate_color <- function(labels = NULL, colors = NULL){
-  label_maker <- function(labels){ #label_maker created with help of https://stackoverflow.com/users/3521006/docendo-discimus
-    x <- strsplit(labels, " ")[[1]]
-    n <- length(x)
-    
-    map_chr(seq_len(n), function(i) {
-      start0 <- x[seq_along(x) < i]
-      mid0 <- x[i]
-      end0 <- x[seq_along(x) > i]
-      start <- paste0('phantom("', paste(start0, collapse = " "), ' ")')
-      end <- paste0('phantom("', paste(end0, collapse = " "), '")')
-      if(length(start0) > 0 && length(end0) > 0) {
-        paste(start, paste0('"', paste(mid0, collapse = " "), '"'), end, sep = ' * ')
-      } else if (length(end0) > 0) {
-        paste(paste0('"', paste(mid0, collapse = " "), '"'), end, sep = ' * ')
-      } else if (length(start0) > 0) {
-        paste(start, paste0('"', paste(mid0, collapse = " "), '"'), sep = ' * ')
-      } else {
-        stop("couldn't finish ...")
-      }
-    })   
-  }
-  labels <- label_maker(labels)
+annotate_color <- function(x = NULL, y = NULL, xmin = NULL, xmax = NULL,  
+                           ymin = NULL, ymax = NULL, xend = NULL, yend = NULL,
+                           labels = NULL, colors = NULL){
+  labels <- strsplit(labels, " ")[[1]]
+  n <- length(labels)
+
+  #labelmaker
+  labels <- map_chr(seq_len(n), function(i) {
+    start0 <- labels[seq_along(labels) < i]
+    mid0 <- labels[i]
+    end0 <- labels[seq_along(labels) > i]
+    start <- paste0('phantom("', paste(start0, collapse = " "), ' ")')
+    end <- paste0('phantom("', paste(end0, collapse = " "), '")')
+    if(length(start0) > 0 && length(end0) > 0) {
+      paste(start, paste0('"', paste(mid0, collapse = " "), '"'), end, sep = ' * ')
+    } else if (length(end0) > 0) {
+      paste(paste0('"', paste(mid0, collapse = " "), '"'), end, sep = ' * ')
+    } else if (length(start0) > 0) {
+      paste(start, paste0('"', paste(mid0, collapse = " "), '"'), sep = ' * ')
+    } else {
+      stop("couldn't finish ...")
+    }
+  })   
+  
   annos <- list()
-  for (i in seq_along(labels)){
-    annos[i] <- list(annotate('text', x = 3, y = .03, parse = T, label = labels[i], color = colors[i]))
-  }
+  #annotation_maker
+  annos <- map2(labels, colors, function(a, r){
+    annos[seq_along(a)] <- list(annotate('text', x, y, xmin, xmax, ymin, ymax, xend, yend,
+                                         parse = T, label = a, color = r))
+  })
   return(annos)
 }
