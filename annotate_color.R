@@ -37,18 +37,25 @@ pop %>%
             prop = sum(prop)) %>% 
   ggplot() + 
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') +
-  annotate_color(x = 3, y = .05,
+  annotate_color(x = 5, y = .06,
                  labels = 'I go to school today and have fun', 
-                 colors = c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'pink', 'grey'), size = 6, angle = 20)
+                 colors = c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'pink', 'grey')) 
 
 
 #label_maker created with help of https://stackoverflow.com/users/3521006/docendo-discimus
 annotate_color <- function(geom = 'text', x = NULL, y = NULL, xmin = NULL, xmax = NULL,  
                            ymin = NULL, ymax = NULL, xend = NULL, yend = NULL, ...,
                            labels = NULL, colors = NULL, default_color = 'black'){
+  
+  # Checks for essential parameters
+  if (is.null(colors) || is.null(x) || is.null(y) || is.null(labels)){
+    stop('Missing one of the parameters: labels, colors, x, or y')}
+  
+  
   labels <- strsplit(labels, " ")[[1]]
   n <- length(labels)
   
+  # Ensures that labels and colors match in length 
   if (length(colors) < length(labels)){
     colors <- map_chr(seq_len(length(labels)), function(i){
       if (is.na(colors[i])){
@@ -60,13 +67,13 @@ annotate_color <- function(geom = 'text', x = NULL, y = NULL, xmin = NULL, xmax 
     warning('The length of the colors arg is longer than the number of words in the labels arg. Extra colors will be ignored.')
   }
   
-   #labelmaker
+   # Formats the labels argument into usable parameters
     labels <- map_chr(seq_len(n), function(i) {
       start0 <- labels[seq_along(labels) < i]
       mid0 <- labels[i]
       end0 <- labels[seq_along(labels) > i]
       start <- paste0('phantom("', paste(start0, collapse = " "), ' ")')
-      end <- paste0('phantom("', paste(end0, collapse = " "), '")')
+      end <- paste0('phantom("', paste(end0, collapse = " "), ' ")') ##
       if(length(start0) > 0 && length(end0) > 0) {
         paste(start, paste0('"', paste(mid0, collapse = " "), '"'), end, sep = ' * ')
       } else if (length(end0) > 0) {
@@ -78,12 +85,12 @@ annotate_color <- function(geom = 'text', x = NULL, y = NULL, xmin = NULL, xmax 
       }
     })   
   
+  # Plugs all arguments into the annotate() function and stores them into a list
   annos <- list()
-  #annotation_maker
-  annos <- map2(labels, colors, function(annolabel, annotext){
+  annos <- map2(labels, colors, function(annolabel, annocolor){
     annos[seq_along(annolabel)] <- list(annotate(geom, x, y, xmin, xmax, ymin, ymax, xend, yend, ...,
-                                         parse = T, label = annolabel, color = annotext))
+                                         parse = T, label = annolabel, color = annocolor))
   })
-  return(annos) #returns a list of annotation functions
+  return(annos) # Returns the list which can be added to a ggplot like any other layer
 }
 
