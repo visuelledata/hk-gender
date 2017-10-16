@@ -51,18 +51,35 @@ pop %>%
   geom_text(aes(x = age_range, y = prop, fill = sex, label = percent(prop)), position = position_dodge(width = .9), vjust = .358, hjust = 1.1,size = 4, color = 'White') +
   scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
   coord_flip()+
-  theme_pub() +
+  theme_pub(axis_line = TRUE) +
   no_gridlines() + 
   no_x_axis() +
   no_x_line() +
-  annotate(geom = 'text', x = .6, y = .57, parse = TRUE, label = '"- Global % of " * phantom("Women")', size = 3, color = 'grey20') + 
-  annotate(geom = 'text', x = .6, y = .57, parse = TRUE, label='phantom("- Global % of ") * "Women"', size = 3, color="#E24645") + 
+  annotate_color(x = .6, y = .57, size = 3,
+                 labels = '- Global % of Women', 
+                 colors = c('grey20', 'grey20', 'grey20', 'grey20', '#E24645')) +
   no_ticks() +
   theme(axis.text.y=element_text(color = "grey55"),
-        plot.title = element_text(color = 'grey45')) + 
+        plot.title = element_text(color = 'grey45', hjust = -.3, vjust = 5), 
+        plot.margin = unit(c(1,.5, .5, .5), 'cm')) + 
   coord_flip() + 
   no_legend() + 
-  labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')  
+  labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
+
+
+####look into
+#pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot() + 
+  geom_col(aes(x = age_range, y = prop, fill = sex)) +
+  annotate_color(x = 5, y = .06, fontface = 'bold', size = 7,
+                 labels = 'I go to school today and have', 
+                 colors = c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'pink')) +
+  coord_polar(theta = "y") + 
+  geom_text(aes(x = age_range, y = prop, label = age_range)) + 
+  coord_flip()
 
 
   

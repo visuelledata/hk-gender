@@ -1,0 +1,101 @@
+---
+title: "Colorful Plot Annotations"
+author: "Chris Peralta"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = 'jpeg', echo = FALSE)
+library(tidyverse) # annotate_color( )not dependent on tidyverse, just ggplot and purrr
+library(SciencesPo)
+options(warn = -1)
+```
+
+While working on a data visualization project, I discovered that ggplot2 does not allow for easy multicolor plot annoations. So after some searching I discovered [this post from Andrew Whitby's blog](https://andrewwhitby.com/2017/09/18/multi-color-text-ggplot2/comment-page-1/#comment-7400). His method is to overlay multiple annotate() functions with plotmath components to hide the uncolored components as shown below. This method requires the text to be formatted as shown below:
+
+```{r exampleannotations, eval = FALSE, echo = TRUE}
+annotate('text', x = 3, y = .03, parse = T,label = '"I " * phantom("want more pretty colors")', color = 'grey') + 
+annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I ") * "want" * phantom("more pretty colors")', color = 'blue') +
+annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I want ") * "more" * phantom("pretty colors")', color = 'green') +
+annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I want more ") * "pretty" * phantom("colors")', color = 'purple') +
+annotate('text', x = 3, y = .03, parse = T,label = 'phantom("I want more pretty ") * "colors"', color = 'orange') 
+```
+
+This code hides the word that isn't being passed through phantom() and will color. Then stack the labels onto the plot. The huge downside of this method is that it is very label instensive and requires very specific formatting. So I decided to write a function that writes all of the annotate() functions for me. 
+
+
+The function, annotate_color(), takes its arguments in the same order as annotate function and to call the same set of functions you would just type:
+
+```{r annotate_colorex, eval = FALSE, echo = TRUE}
+annotate_color(x = 3, y = .03, 
+               labels = 'I want more pretty colors',
+               colors = c('grey', 'blue', 'green', 'purple', 'orange'))
+```
+
+
+Both of these blocks of code would evaluate to something like this:
+```{r plotexample, echo = FALSE}
+a <- as.tibble(replicate(10, rnorm(1000)))
+a %>% 
+    ggplot(aes(x = V1, y = V2)) + 
+    geom_point() + 
+    annotate_color(x = 0, y = 2, size = 10, 
+                   labels = 'I want more pretty colors',
+                   colors = c('grey', 'blue', 'green', 'purple', 'orange'))
+```
+
+
+Hopefully, you won't actually use it to create a graph that looks like that as it is quite ugly. So here is an example of how I would use it. 
+
+```{r goodexample, echo = FALSE} 
+library(tidyverse)
+library(SciencesPo)
+pop <- readr::read_csv("D:/rproj/hk-gender/preclean-excel.csv", 
+                na = '-',
+                col_types = cols(Australian = col_integer(), 
+                                 Indonesian = col_integer(), 
+                                 Japanese = col_integer(), 
+                                 Nepalese = col_integer(), 
+                                 Pakistani = col_integer(), 
+                                 Thai = col_integer()))
+
+pop$age_range <- factor(pop$age_range, levels = unique(pop$age_range))
+
+pop <- pop %>% 
+  gather(chinese_hk_resident:Others, key = 'nationality', value = 'population') %>% 
+  mutate(prop = population / sum(population, na.rm = TRUE))
+
+
+
+grouped <- pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
+
+pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot() + 
+  geom_col(aes(x = age_range, y = prop, fill = sex), width = .97) +
+  annotate_color(x = 5.4, y = .06, size = 5.5, default_color = 'black',
+                 labels = 'In Hong Kong,                                      ', 
+                 colors = c('Grey30')) + 
+  annotate_color(x = 3, y = .06, size = 4.5, default_color = 'grey40',
+                 labels = 'Women outnumber    Men in most age groups', 
+                 colors = c('black', '', '', '', '', 'black')) +
+  coord_polar(theta = "y") + 
+  theme_pub() +
+  no_legend() + 
+  no_y_axis() +
+  no_x_axis() + 
+  scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
+  geom_text(data = subset(grouped, sex == 'male'), 
+            aes(x = age_range, y = prop, label = age_range), 
+            angle = 16, color = 'grey20', size = 3.2,
+            hjust = -.1, position = position_dodge(width=.5)) +
+  geom_hline(yintercept = .5, linetype = 'dashed', color = 'grey35') +
+  theme(plot.margin = unit(c(0,0, 0, 0), 'cm'))
+```
+
