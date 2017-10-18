@@ -67,6 +67,13 @@ pop %>%
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
 
 
+
+
+
+
+
+
+
 ####look into
 #pop %>%  
   group_by(age_range, sex) %>% 
@@ -81,5 +88,36 @@ pop %>%
   geom_text(aes(x = age_range, y = prop, label = age_range)) + 
   coord_flip()
 
-
+  
+  
+  grouped <- pop %>%  
+    group_by(age_range, sex) %>% 
+    summarize(population = sum(population, na.rm = TRUE)) %>% 
+    mutate(prop = population / sum(population))
+  
+  pop %>%  
+    group_by(age_range, sex) %>% 
+    summarize(population = sum(population, na.rm = TRUE)) %>% 
+    mutate(prop = population / sum(population)) %>% 
+    ggplot() + 
+    geom_col(aes(x = age_range, y = prop, fill = sex), width = .97) +
+    annotate_color(x = 5.4, y = .06, size = 5.5, default_color = 'black',
+                   labels = 'In Hong Kong,                                      ', 
+                   colors = c('Grey30')) + 
+    annotate_color(x = 3, y = .06, size = 4.5, default_color = 'grey40',
+                   labels = 'Women outnumber    Men in most age groups', 
+                   colors = c('black', '', '', '', '', 'black')) +
+    coord_polar(theta = "y") + 
+    theme_pub() +
+    no_legend() + 
+    no_y_axis() +
+    no_x_axis() + 
+    scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
+    geom_text(data = subset(grouped, sex == 'male'), 
+              aes(x = age_range, y = prop, label = age_range), 
+              angle = 16, color = 'grey20', size = 3.2,
+              hjust = -.1, position = position_dodge(width=.5)) +
+    geom_hline(yintercept = .5, linetype = 'dashed', color = 'grey35') +
+    theme(plot.margin = unit(c(0,0, 0, 0), 'cm'))
+  ggsave('circleplot.jpg', plot = last_plot())
   
