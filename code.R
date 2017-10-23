@@ -92,7 +92,7 @@ pop_by_nation <- pop %>%
   no_y_ticks() +
   geom_text(data = subset(grouped, sex == 'female'), aes(x = nationality, y = prop, 
                                                          fill = sex, label = percent(prop)), 
-            vjust = 1.6, color = 'Grey95') + 
+            vjust = 1.3, color = 'Grey95', size = 3.5) + 
   no_legend() + 
   labs(x = '\nNationality', y = 'Percent of Women\n') + 
   theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), # top, right, bottom, left
@@ -120,17 +120,6 @@ grid.draw(gg)
 
 ggsave('bar_nation.jpeg', gg)
 # End- Bar chart nationality-----------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
 
 
 
