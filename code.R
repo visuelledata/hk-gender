@@ -13,13 +13,16 @@ pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv",
                                                    Pakistani = col_integer(), 
                                                    Thai = col_integer()))
 
+source("annotate_color.R")
+
 # To Do: clean graphs, population distribution HK, distribution by nationality, ...
 
 
 pop$age_range <- factor(pop$age_range, levels = unique(pop$age_range))
+pop$sex <- factor(pop$sex, levels = unique(pop$sex))
 
 pop <- pop %>% 
-  gather(chinese_hk_resident:Others, key = 'nationality', value = 'population') %>% 
+  gather(`Chinese (HK Resident)`:Others, key = 'nationality', value = 'population') %>% 
   mutate(prop = population / sum(population, na.rm = TRUE))
 
 
@@ -33,7 +36,10 @@ pop %>%
   facet_wrap(~nationality, scale = 'free_y') #add this as an interactive graph
   
 
-sex.scale <- c("female" = "#E24645", "male" = "#428DB6")
+
+women.scale <- brewer.pal(9, "Reds")
+men.scale <- brewer.pal(9, "Blues")
+sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 
 pop %>%  
   group_by(age_range, sex) %>% 
@@ -67,6 +73,65 @@ pop %>%
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
 
 
+# Bar chart nationality------------------------------------------------------------------------------------------------------
+
+pop_by_nation <- pop %>% 
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot(aes(x = fct_reorder2(nationality, sex, -prop), y = prop, fill = sex)) + 
+  geom_col(width = .8) + 
+  scale_fill_manual(values = c(men.scale[2], women.scale[5]), expand = c(0,0)) + 
+  theme_pub(axis_line = TRUE) + 
+  no_gridlines() + 
+  scale_y_discrete(expand = c(0,0)) +
+  scale_x_discrete(labels = c("British", "Pakistani", "American", "Australian", "Nepalese", "Other", "Japanese", 
+                              "Chinese HK", "Indian", "Other Chinese ", "Thai", 'Filipino', "Indonesian")) + 
+  no_y_line() + 
+  no_y_text() + 
+  no_y_ticks() +
+  geom_text(data = subset(grouped, sex == 'female'), aes(x = nationality, y = prop, 
+                                                         fill = sex, label = percent(prop)), 
+            vjust = 1.6, color = 'Grey95') + 
+  no_legend() + 
+  labs(x = '\nNationality', y = 'Percent of Women\n') + 
+  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), # top, right, bottom, left
+        plot.title = element_text(hjust = -.11, vjust = 5.5, color = 'Grey 23'),
+        axis.title = element_text(color = 'Grey 35', size = 14),
+        axis.title.y = element_text(hjust = .99),
+        axis.line.x = element_line(color = 'Grey 55'),
+        axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16),
+        axis.ticks = element_line(color = 'Grey 60'),
+        axis.ticks.length = unit(0, "cm"))
+
+grobs <- grobTree(
+  gp = gpar(fontsize = 14, fontface = 'bold'), 
+  textGrob(label = "Most foreigners in Hong Kong are ", name = "title1",
+           x = unit(2.2, "lines"), y = unit(-.5, "lines"), 
+           hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
+  textGrob(label = "Women", name = "title2",
+           x = grobWidth("title1") + unit(2.2, "lines"), y = unit(-.5, "lines"),
+           hjust = 0, vjust = 0, gp = gpar(col = women.scale[5]))
+)
+
+gg <- arrangeGrob(pop_by_nation, top=grobs, padding = unit(2.6, "line"))
+grid.newpage()
+grid.draw(gg)
+
+ggsave('bar_nation.jpeg', gg)
+# End- Bar chart nationality-----------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -90,18 +155,18 @@ pop %>%
 
   
   
-  grouped <- pop %>%  
-    group_by(age_range, sex) %>% 
-    summarize(population = sum(population, na.rm = TRUE)) %>% 
-    mutate(prop = population / sum(population))
+grouped <- pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
   
-  pop %>%  
-    group_by(age_range, sex) %>% 
-    summarize(population = sum(population, na.rm = TRUE)) %>% 
-    mutate(prop = population / sum(population)) %>% 
-    ggplot() + 
-    geom_col(aes(x = age_range, y = prop, fill = sex), width = .97) +
-    annotate_color(x = 5.4, y = .06, size = 5.5, default_color = 'black',
+pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot() + 
+  geom_col(aes(x = age_range, y = prop, fill = sex), width = .97) +
+  annotate_color(x = 5.4, y = .06, size = 5.5, default_color = 'black',
                    labels = 'In Hong Kong,                                      ', 
                    colors = c('Grey30')) + 
     annotate_color(x = 3, y = .06, size = 4.5, default_color = 'grey40',
