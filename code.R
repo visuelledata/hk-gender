@@ -3,6 +3,9 @@ library(forcats)
 library(SciencesPo)
 library(scales)
 library(stringr)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
 
 pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", 
                                   na = '-',
@@ -26,6 +29,17 @@ pop <- pop %>%
   mutate(prop = population / sum(population, na.rm = TRUE))
 
 
+
+
+women.scale <- brewer.pal(9, "Reds")
+men.scale <- brewer.pal(9, "Blues")
+sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
+nat.scale <- brewer.pal(12, "Set3")
+
+
+# Exploratory data analysis------------------------------------------------------------------------------------------
+
+
 pop %>%  
   filter(age_range != '0 - 4' & age_range != '80 - 84' & age_range != '85+') %>%
   group_by(age_range, sex, nationality) %>%
@@ -37,11 +51,8 @@ pop %>%
   
 
 
-women.scale <- brewer.pal(9, "Reds")
-men.scale <- brewer.pal(9, "Blues")
-sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 
-pop %>%  
+pop %>%  #Try as lollipop chart 
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
@@ -73,15 +84,78 @@ pop %>%
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
 
 
+
+# Population by Nationality--------------------------------------------------------------------------------------------
+pop %>% 
+  filter(nationality != 'Chinese (HK Resident)') %>% 
+  group_by(nationality) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(condition = nationality == 'Filipino' | nationality == 'Indonesian' |
+                     nationality == 'Chinese (Temp Resident)' | nationality == 'British' | nationality == 'Indian') %>% 
+  ggplot(aes(fct_reorder(nationality, population), population)) + 
+  geom_col(fill = 'grey 89') + 
+  geom_col(aes(alpha = condition), fill = '#807DBA') +
+  scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0)) + 
+  theme_pub() + 
+  no_legend() + 
+  theme(axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16))
+
+
+#There are 7,336,585 people in Hong Kong
+sum(pop$population, na.rm = TRUE) 
+#There are 6,646,415 Chinese Residents
+sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE)
+# 90.59% of people are Chinese residents, 9.41% are minorities
+sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)
+1 - sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)
+# 54% Female and 46% male
+pop %>% 
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
+# With only Chinese (HK), 48.1% male, 51.9% female
+pop %>% 
+  filter(nationality == 'Chinese (HK Resident)') %>% 
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
+#Without Chinese (HK), 25.5% male, 74.5% female
+pop %>% 
+  filter(nationality != 'Chinese (HK Resident)') %>% 
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
+# These groups make up 77% of foreigners
+minority <- pop %>% 
+  filter(nationality != 'Chinese (HK Resident)') %>% 
+  group_by(nationality) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  arrange(desc(prop))
+minority$prop[1] + minority$prop[2] + minority$prop[3] + minority$prop[5] + minority$prop[6]  
+
+#End- Population by nationality-------------------------------------------------------------------------------------------
+
+
 # Bar chart nationality------------------------------------------------------------------------------------------------------
+
+grouped <- pop %>% 
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
 
 pop_by_nation <- pop %>% 
   group_by(nationality, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
+  mutate(condition = nationality == 'Filipino' | nationality == 'Indonesian' |
+                     nationality == 'Chinese (Temp Resident)' | nationality == 'British' | nationality == 'Indian') %>% 
   ggplot(aes(x = fct_reorder2(nationality, sex, -prop), y = prop, fill = sex)) + 
-  geom_col(width = .8) + 
-  scale_fill_manual(values = c(men.scale[2], women.scale[5]), expand = c(0,0)) + 
+  geom_col(width = .8, fill = 'grey 90') +
+  geom_col(aes(alpha = condition, fill = sex), width = .8) +
+  #geom_col(fill = 'grey 89') + 
+  #geom_col(aes(alpha = condition), fill = '#807DBA')
+  scale_fill_manual(values = c(men.scale[3], women.scale[5]), expand = c(0,0)) + 
   theme_pub(axis_line = TRUE) + 
   no_gridlines() + 
   scale_y_discrete(expand = c(0,0)) +
@@ -95,18 +169,19 @@ pop_by_nation <- pop %>%
             vjust = 1.3, color = 'Grey95', size = 3.5) + 
   no_legend() + 
   labs(x = '\nNationality', y = 'Percent of Women\n') + 
-  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), # top, right, bottom, left
+  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), #  top, right, bottom, left
         plot.title = element_text(hjust = -.11, vjust = 5.5, color = 'Grey 23'),
         axis.title = element_text(color = 'Grey 35', size = 14),
         axis.title.y = element_text(hjust = .99),
         axis.line.x = element_line(color = 'Grey 55'),
         axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16),
         axis.ticks = element_line(color = 'Grey 60'),
-        axis.ticks.length = unit(0, "cm"))
+        axis.ticks.length = unit(0, "cm")) + 
+  annotate('text', x = 13.33, y = 1.01, label = '---------100%', color = 'grey 50', size = 4)
 
 grobs <- grobTree(
   gp = gpar(fontsize = 14, fontface = 'bold'), 
-  textGrob(label = "Most foreigners in Hong Kong are ", name = "title1",
+  textGrob(label = "4 of the 5 largest nationalities are dominated by ", name = "title1",
            x = unit(2.2, "lines"), y = unit(-.5, "lines"), 
            hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
   textGrob(label = "Women", name = "title2",
