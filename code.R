@@ -37,6 +37,16 @@ sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 nat.scale <- brewer.pal(12, "Set3")
 
 
+
+
+
+
+
+
+
+
+
+
 # Exploratory data analysis------------------------------------------------------------------------------------------
 
 
@@ -52,6 +62,9 @@ pop %>%
 
 
 
+
+
+# Start---------------------------------------------------------------------------------------------------------------
 pop %>%  #Try as lollipop chart 
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
@@ -82,6 +95,9 @@ pop %>%  #Try as lollipop chart
   coord_flip() + 
   no_legend() + 
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
+# End---------------------------------------------------------------------------------------------------------------------
+
+
 
 
 
@@ -153,8 +169,6 @@ pop_by_nation <- pop %>%
   ggplot(aes(x = fct_reorder2(nationality, sex, -prop), y = prop, fill = sex)) + 
   geom_col(width = .8, fill = 'grey 90') +
   geom_col(aes(alpha = condition, fill = sex), width = .8) +
-  #geom_col(fill = 'grey 89') + 
-  #geom_col(aes(alpha = condition), fill = '#807DBA')
   scale_fill_manual(values = c(men.scale[3], women.scale[5]), expand = c(0,0)) + 
   theme_pub(axis_line = TRUE) + 
   no_gridlines() + 
@@ -168,36 +182,67 @@ pop_by_nation <- pop %>%
                                                          fill = sex, label = percent(prop)), 
             vjust = 1.3, color = 'Grey95', size = 3.5) + 
   no_legend() + 
-  labs(x = '\nNationality', y = 'Percent of Women\n') + 
+  labs(x = '\nNationality', y = 'Percent of women in group\n') + 
   theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), #  top, right, bottom, left
         plot.title = element_text(hjust = -.11, vjust = 5.5, color = 'Grey 23'),
-        axis.title = element_text(color = 'Grey 35', size = 14),
-        axis.title.y = element_text(hjust = .99),
+        axis.title = element_text(color = 'Grey40', size = 14),
+        axis.title.y = element_text(hjust = .94),
         axis.line.x = element_line(color = 'Grey 55'),
         axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16),
         axis.ticks = element_line(color = 'Grey 60'),
         axis.ticks.length = unit(0, "cm")) + 
   annotate('text', x = 13.33, y = 1.01, label = '---------100%', color = 'grey 50', size = 4)
 
+
 grobs <- grobTree(
   gp = gpar(fontsize = 14, fontface = 'bold'), 
   textGrob(label = "4 of the 5 largest nationalities are dominated by ", name = "title1",
-           x = unit(2.2, "lines"), y = unit(-.5, "lines"), 
+           x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
            hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
   textGrob(label = "Women", name = "title2",
-           x = grobWidth("title1") + unit(2.2, "lines"), y = unit(-.5, "lines"),
+           x = grobWidth("title1") + unit(2.24, "lines"), y = unit(-.5, "lines"),
            hjust = 0, vjust = 0, gp = gpar(col = women.scale[5]))
 )
 
-gg <- arrangeGrob(pop_by_nation, top=grobs, padding = unit(2.6, "line"))
+
+gb <- ggplot_build(pop_by_nation)
+gt <- ggplot_gtable(gb)
+gt$layout$clip[gt$layout$name=="panel"] <- "off"
+gg <- arrangeGrob(gt, top=grobs, padding = unit(2.6, "line"))
 grid.newpage()
 grid.draw(gg)
 
 ggsave('bar_nation.jpeg', gg)
 # End- Bar chart nationality-----------------------------------------------------------------------------------------
 
+pop_pyr_format <- function(data, filter_cat){ 
+  women <- pop %>% 
+    filter(nationality == filter_cat) %>%
+    mutate(population = (population * -1))
+  men <- pop %>% 
+    filter(nationality == filter_cat)
+  pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male')) 
+  return(pop_pyr_data)
+}
 
 
+
+pop_pyr_format(pop, 'American') %>% 
+  ggplot(aes(x = age_range, y = population, fill = sex)) +   # Fill column
+  geom_bar(stat = "identity", width = .6) +   # draw the bars
+  coord_flip(ylim = c(-42000, 42000)) +  # Flip axes
+  labs(title="Email Campaign Funnel") +
+  scale_y_continuous(breaks = seq(-50000, 50000, 10000), 
+                     labels = paste0(as.character(c(seq(50, 0, -10), seq(5, 50, 10))), "k")) +
+  theme(plot.title = element_text(hjust = .5), 
+        axis.ticks = element_blank()) +   # Centre plot title
+  scale_fill_brewer(palette = "Dark2")
+
+pop %>% 
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  filter(nationality == 'American') + 
 
 
 
