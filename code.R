@@ -34,7 +34,6 @@ pop <- pop %>%
 women.scale <- brewer.pal(9, "Reds")
 men.scale <- brewer.pal(9, "Blues")
 sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
-nat.scale <- brewer.pal(12, "Set3")
 
 
 
@@ -95,6 +94,57 @@ pop %>%  #Try as lollipop chart
   coord_flip() + 
   no_legend() + 
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
+
+
+
+pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
+  mutate(condition = any(condition)) %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_linerange(aes(ymin = 0, ymax = prop), 
+                 position = position_dodge(width = .7), color = 'grey60') + 
+  geom_point(size = 5, position = position_dodge(width = .7)) + 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) 
+
+
+
+pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  mutate(condition = sex == "female" & (age_range == '0 - 4' | age_range == '5 - 9' | age_range == '75 - 79' | 
+                                        age_range == '80 - 84'| age_range == '85+')) %>%
+  mutate(condition = any(condition)) %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_linerange(aes(ymin = 0, ymax = prop), 
+                 position = position_dodge(width = .5), color = 'grey80') + 
+  geom_point(aes(), 
+             size = 5, position = position_dodge(width = .5), color = 'grey80') + 
+  geom_point(aes(alpha = condition), 
+             size = 5, position = position_dodge(width = .5)) + 
+  scale_color_manual(values = c(men.scale[6], women.scale[6])) 
+
+
+pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
+  mutate(condition = any(condition)) %>% 
+  filter(condition == TRUE) %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_hline(yintercept =  .5) +
+  geom_linerange(aes(ymin = 0, ymax = prop), 
+                 position = position_dodge(width = .7), color = 'grey60') + 
+  geom_point(aes(), 
+             size = 5, position = position_dodge(width = .7)) + 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) 
+
+
+
 # End---------------------------------------------------------------------------------------------------------------------
 
 
@@ -215,7 +265,10 @@ grid.draw(gg)
 ggsave('bar_nation.jpeg', gg)
 # End- Bar chart nationality-----------------------------------------------------------------------------------------
 
-pop_pyr_format <- function(data, filter_cat){ 
+
+# Population Pyramids-----------------------------------------------------------------------------------------------------
+pop_pyr_format <- function(data, filter_cat = NA){ 
+  if (!is.na(filter_cat)){
   women <- pop %>% 
     filter(nationality == filter_cat) %>%
     mutate(population = (population * -1))
@@ -223,26 +276,68 @@ pop_pyr_format <- function(data, filter_cat){
     filter(nationality == filter_cat)
   pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male')) 
   return(pop_pyr_data)
+  } else {
+    women <- pop %>% 
+      mutate(population = (population * -1))
+    men <- pop
+    pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male'))
+    return(pop_pyr_data)
+  }
 }
 
+pyramid_nationality <- pop_pyr_format(pop) %>% 
+  filter(nationality != 'Chinese (HK Resident)') %>% 
+  ggplot(aes(x = age_range, y = population, fill = sex, frame = nationality)) +   # Fill column
+  geom_col(width = .6, position = 'identity') +
+  coord_flip(ylim = c(-50000, 50000), expand = c(0,0)) +  # Flip axes
+  #labs(title="Population by age ") +
+  scale_y_continuous(breaks = seq(-50000, 50000, 10000), 
+                     labels = paste0(as.character(c(seq(50, 0, -10), seq(10, 50, 10))), "k")) +
+  theme(plot.title = element_text(hjust = .5), 
+        axis.ticks = element_blank()) +   # Centre plot title
+  scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
+  no_legend()
+
+gganimate(pyramid_nationality, 'pyramid.gif')
 
 
-pop_pyr_format(pop, 'American') %>% 
+bar_nationality <- pop %>% 
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  filter(nationality != 'Chinese (HK Resident)') %>% 
+  ggplot(aes(x = sex, y = prop, fill = sex, frame = nationality)) + 
+  geom_col(position = 'identity') + 
+  geom_text(aes(label = percent(prop)), vjust = -.8, size = 4) + 
+  scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
+  theme_pub() +
+  ylim(0,1) + 
+  no_y_axis() + 
+  no_legend() 
+
+gganimate(bar_nationality, 'bars.gif')
+
+
+ggdraw(a) + draw_plot(temp1, x = -0.25, y = -0.25, scale = .5)
+
+
+#overall pop dist
+pop_pyr_format(pop) %>% 
   ggplot(aes(x = age_range, y = population, fill = sex)) +   # Fill column
   geom_bar(stat = "identity", width = .6) +   # draw the bars
-  coord_flip(ylim = c(-42000, 42000)) +  # Flip axes
+  coord_flip(ylim = c(-350000, 350000)) +  # Flip axes
   labs(title="Email Campaign Funnel") +
   scale_y_continuous(breaks = seq(-50000, 50000, 10000), 
                      labels = paste0(as.character(c(seq(50, 0, -10), seq(5, 50, 10))), "k")) +
   theme(plot.title = element_text(hjust = .5), 
         axis.ticks = element_blank()) +   # Centre plot title
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_manual(values = c(men.scale[5], women.scale[5]))
 
-pop %>% 
-  group_by(nationality, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population)) %>% 
-  filter(nationality == 'American') + 
+
+
+
+
+
 
 
 
