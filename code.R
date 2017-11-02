@@ -6,6 +6,7 @@ library(stringr)
 library(grid)
 library(gridExtra)
 library(RColorBrewer)
+library(cowplot)
 
 pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", 
                                   na = '-',
@@ -14,9 +15,9 @@ pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv",
                                                    Japanese = col_integer(), 
                                                    Nepalese = col_integer(), 
                                                    Pakistani = col_integer(), 
-                                                   Thai = col_integer()))
+                                                   Thai = col_integer()))     #upload data and assign column types
 
-source("annotate_color.R")
+source("annotate_color.R") #load annotate_color()
 
 # To Do: clean graphs, population distribution HK, distribution by nationality, ...
 
@@ -63,7 +64,7 @@ pop %>%
 
 
 
-# Start---------------------------------------------------------------------------------------------------------------
+# Percent of women in age_group---------------------------------------------------------------------------------------------------------------
 pop %>%  #Try as lollipop chart 
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
@@ -95,22 +96,31 @@ pop %>%  #Try as lollipop chart
   no_legend() + 
   labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
 
+        #standardize all y axes to match and allow for easier reading
 
-
-pop %>%  
+# population by age and gender
+plot_adj_pop <- pop %>%  
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
-  mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
-  mutate(condition = any(condition)) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
   geom_linerange(aes(ymin = 0, ymax = prop), 
                  position = position_dodge(width = .7), color = 'grey60') + 
   geom_point(size = 5, position = position_dodge(width = .7)) + 
-  scale_color_manual(values = c(men.scale[5], women.scale[5])) 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
+  theme(axis.text.x = element_text(angle = 90))
+plot_pop <- pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  ggplot(aes(x = age_range, y = population, color = sex, group = sex)) +
+  geom_linerange(aes(ymin = 0, ymax = population), 
+                 position = position_dodge(width = .45), color = 'grey60') + 
+  geom_point(size = 5, position = position_dodge(width = .45)) + 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
+  theme(axis.text.x = element_text(angle = 90))
+plot_grid(plot_adj_pop, plot_pop)
 
-
-
+#highlight ends
 pop %>%  
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
@@ -127,22 +137,35 @@ pop %>%
              size = 5, position = position_dodge(width = .5)) + 
   scale_color_manual(values = c(men.scale[6], women.scale[6])) 
 
-
+#highlight target
 pop %>%  
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
   mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
   mutate(condition = any(condition)) %>% 
-  filter(condition == TRUE) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
-  geom_hline(yintercept =  .5) +
   geom_linerange(aes(ymin = 0, ymax = prop), 
-                 position = position_dodge(width = .7), color = 'grey60') + 
+                 position = position_dodge(width = .5), color = 'grey80') + 
   geom_point(aes(), 
-             size = 5, position = position_dodge(width = .7)) + 
-  scale_color_manual(values = c(men.scale[5], women.scale[5])) 
-
+             size = 5, position = position_dodge(width = .5), color = 'grey80') + 
+  geom_point(aes(alpha = condition), 
+             size = 5, position = position_dodge(width = .5)) + 
+  scale_color_manual(values = c(men.scale[6], women.scale[6])) + 
+  theme(axis.text.x = element_text(angle = 90))
+pop %>%
+  filter(age_range == '20 - 24' | age_range == '25 - 29'|
+         age_range == '30 - 34' | age_range == '35 - 39'|
+         age_range == '40 - 44' | age_range == '45 - 49'|
+         age_range == '50 - 54' | age_range == '55 - 59') %>% 
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot(aes(x = sex, y = prop)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(prop)), 
+            color = 'white', vjust = 1.5) 
+  
 
 
 # End---------------------------------------------------------------------------------------------------------------------
@@ -332,8 +355,42 @@ pop_pyr_format(pop) %>%
   theme(plot.title = element_text(hjust = .5), 
         axis.ticks = element_blank()) +   # Centre plot title
   scale_fill_manual(values = c(men.scale[5], women.scale[5]))
+#annotate to add mean ages of men and women
 
+# End pop pyramids---------------------------------------------------------------------------------------------------------
 
+#Diverging Bars-------------------------------------------------------------------------------------------------------
+#how many women does each nationality contribute to this age_range?
+temp1 <- pop %>%
+  filter(age_range == '20 - 24' | age_range == '25 - 29'|
+           age_range == '30 - 34' | age_range == '35 - 39'|
+           age_range == '40 - 44' | age_range == '45 - 49'|
+           age_range == '50 - 54' | age_range == '55 - 59') %>%
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  filter(sex == 'male') 
+temp2 <- pop %>% 
+  filter(age_range == '20 - 24' | age_range == '25 - 29'|
+           age_range == '30 - 34' | age_range == '35 - 39'|
+           age_range == '40 - 44' | age_range == '45 - 49'|
+           age_range == '50 - 54' | age_range == '55 - 59') %>%
+  group_by(nationality, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  filter(sex == 'female')
+temp2$population <- temp2$population - temp1$population
+
+temp2 %>% 
+  ggplot(aes(x = fct_reorder(nationality, population), y = population, label = population)) + 
+  geom_point(stat = 'identity', fill = "black", size = 1)  +
+  geom_segment(aes(y = 0, x = nationality, yend = population, xend = nationality), 
+               color = "black") +
+  labs(title = "How many women does each nationality contribute to the 20-59 age groups?") + 
+  coord_flip()
+
+ggsave('women-men.jpeg', plot = last_plot())
+#group negatives together? reorder from inc to dec
+
+#-----------------------------------------------------------------------------------------------------------------
 
 
 

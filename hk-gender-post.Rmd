@@ -1,0 +1,76 @@
+---
+title: Women significantly outnumber men in Hong Kong
+author: Chris Peralta
+date: '2017-10-20'
+slug: hk-gender
+categories:
+  - R
+tags:
+  - ggplot2
+  - data visualization
+  - design
+description: ''
+#output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Women significantly outnumber men in Hong Kong. In this article, I will show you how badly men are outnumbered and how significant the gap is. 
+
+## How badly do women outnumber men?
+
+Women make up `r percent(sum(filter(pop, sex == 'female')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE))` of the population, while men make up `r percent(1 - sum(filter(pop, sex == 'female')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE))` of the population. 
+
+This might not seem so bad, but I'm going to break it down to give you a better picture. First lets look at a population pyramid so we can get an idea of what Hong Kong's population looks like. 
+
+```{r cars}
+#population pyramid
+```
+
+From this we see that people from 30-59 make up most of the population of Hong Kong with men being older on average than women. 
+
+Now, I'll put the percent of women in each age group next to the percent of men in each age group. 
+
+```{r pressure, echo=FALSE}
+#population by age and gender
+```
+
+First, lets look at some of the individual points
+
+```{r }
+#highlight ends
+```
+
+These points are quite interesting, but they can be easily explained.
+For the left side:
+More boys than girls are born globally, you can read about this phenomena here. INSERT HYPERLINK
+For the right side:
+Women have significantly longer life spans. 
+
+So from here we will only look at the data for 20-59 year olds as shown below.
+
+```{r }
+#highlight target
+#include bar chart in upper right corner showing %women and men
+```
+
+In the 20-59 age group, we have 56% women to 44% men with this group making up `r sum(filter(pop, age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)` of the population. 
+
+Now lets break this down by nationality to see who contributes the most to this number. 
+
+```{r }
+#diverging lollipop
+```
+
+
+
+
+
+
+
+
+
+
+
