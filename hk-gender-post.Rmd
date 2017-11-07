@@ -56,13 +56,19 @@ So from here we will only look at the data for 20-59 year olds as shown below.
 #include bar chart in upper right corner showing %women and men
 ```
 
-In the 20-59 age group, we have 56% women to 44% men with this group making up `r sum(filter(pop, age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)` of the population. 
+The 35-39 age group alone, is made up of 60.1% women! This is also one of the largest age groups in Hong Kong!
 
-Now lets break this down by nationality to see who contributes the most to this number. 
+In the 20-59 age group, there are 56% women to 44% men. This group makes up `r sum(filter(pop, age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)` of the total population of Hong Kong. 
+
+In this group there are `r sum(filter(pop, (sex == 'female') & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE) - sum(filter(pop, (sex == 'male') & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE)` more women than men.
+
+You can look at the graph below to see which nationalities contribute the most women to the number above.  
 
 ```{r }
 #diverging lollipop
 ```
+
+This graph shows us that the Filipinos and Indonesians contribute almost as many women to the gender gap as the locals of Hong Kong, despite making up a much smaller portion of the overall population. This is likely due to the large numbers of domestic helpers employed by families in Hong Kong, which are almost all women from The Philippines and Indonesia. 
 
 
 

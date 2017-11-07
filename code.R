@@ -384,7 +384,7 @@ temp2 %>%
   geom_point(stat = 'identity', fill = "black", size = 1)  +
   geom_segment(aes(y = 0, x = nationality, yend = population, xend = nationality), 
                color = "black") +
-  labs(title = "How many women does each nationality contribute to the 20-59 age groups?") + 
+  labs(title = "The number of women minus the number of men by nationality") + 
   coord_flip()
 
 ggsave('women-men.jpeg', plot = last_plot())
