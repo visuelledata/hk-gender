@@ -8,7 +8,7 @@ library(gridExtra)
 library(RColorBrewer)
 library(cowplot)
 
-pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", 
+pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nationality
                                   na = '-',
                                   col_types = cols(Australian = col_integer(), 
                                                    Indonesian = col_integer(), 
@@ -16,6 +16,8 @@ pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv",
                                                    Nepalese = col_integer(), 
                                                    Pakistani = col_integer(), 
                                                    Thai = col_integer()))     #upload data and assign column types
+
+
 
 source("annotate_color.R") #load annotate_color()
 
@@ -390,6 +392,51 @@ temp2 %>%
 ggsave('women-men.jpeg', plot = last_plot())
 #group negatives together? reorder from inc to dec
 
+# Only Helpers-------------------------------------------------------------------------------------------------------------------
+without_helpers <- read_csv("withouthelpers-preclean.csv", #this data is by ethnicity
+                            na = '-') %>% 
+  gather(Chinese:Multiracial, key = 'ethnicity', value = 'population')
+
+with_helpers <- read_csv("withhelpers-preclean.csv", 
+                         na = '-') %>% 
+  gather(Chinese:Multiracial, key = 'ethnicity', value = 'population')
+
+only_helpers <- with_helpers %>% 
+  mutate(population = with_helpers$population - without_helpers$population) %>% 
+  filter(population != 0)
+
+sum(only_helpers$population, na.rm = TRUE) #domestic workers in Hong Kong
+sum(only_helpers$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE) #percent of total pop
+
+only_helpers %>% 
+  group_by(sex, ethnicity) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>%
+  #mutate(prop = population / sum(population)) %>% 
+  ggplot(aes(x = sex, y = population)) +
+  geom_col() + 
+  geom_text(aes(label = population), vjust = -1) + 
+  facet_wrap(~ethnicity, scale = 'free_y') 
+
+only_helpers %>% 
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>%
+  mutate(prop = population / sum(population)) %>% 
+  ggplot(aes(x = sex, y = prop)) +
+  geom_col() + 
+  geom_text(aes(label = prop), vjust = -1) 
+
+
+only_helpers %>% 
+  group_by(ethnicity) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population)) %>% 
+  ggplot(aes(fct_reorder(ethnicity, prop), prop)) +
+  geom_col() + 
+  geom_text(aes(label = percent(prop)), vjust = -1)
+
+
+
+#---------------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------
 
 
