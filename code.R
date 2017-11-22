@@ -101,7 +101,7 @@ pop %>%  #Try as lollipop chart
         #standardize all y axes to match and allow for easier reading
 
 # population by age and gender
-plot_adj_pop <- pop %>%  
+pop %>%   #consider putting next to other plots so 
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
@@ -111,16 +111,6 @@ plot_adj_pop <- pop %>%
   geom_point(size = 5, position = position_dodge(width = .7)) + 
   scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
   theme(axis.text.x = element_text(angle = 90))
-plot_pop <- pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  ggplot(aes(x = age_range, y = population, color = sex, group = sex)) +
-  geom_linerange(aes(ymin = 0, ymax = population), 
-                 position = position_dodge(width = .45), color = 'grey60') + 
-  geom_point(size = 5, position = position_dodge(width = .45)) + 
-  scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
-  theme(axis.text.x = element_text(angle = 90))
-plot_grid(plot_adj_pop, plot_pop)
 
 #highlight ends
 pop %>%  
@@ -167,9 +157,6 @@ pop %>%
   geom_col() + 
   geom_text(aes(label = percent(prop)), 
             color = 'white', vjust = 1.5) 
-  
-
-
 # End---------------------------------------------------------------------------------------------------------------------
 
 
@@ -196,7 +183,7 @@ pop %>%
 sum(pop$population, na.rm = TRUE) 
 #There are 6,646,415 Chinese Residents
 sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE)
-# 90.59% of people are Chinese residents, 9.41% are minorities
+# 90.59% of people are Chinese residents, 9.41% have foreign nationalities
 sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)
 1 - sum(filter(pop, nationality == 'Chinese (HK Resident)')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)
 # 54% Female and 46% male
@@ -259,7 +246,6 @@ pop_by_nation <- pop %>%
   no_legend() + 
   labs(x = '\nNationality', y = 'Percent of women in group\n') + 
   theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), #  top, right, bottom, left
-        plot.title = element_text(hjust = -.11, vjust = 5.5, color = 'Grey 23'),
         axis.title = element_text(color = 'Grey40', size = 14),
         axis.title.y = element_text(hjust = .94),
         axis.line.x = element_line(color = 'Grey 55'),
@@ -345,18 +331,50 @@ gganimate(bar_nationality, 'bars.gif')
 
 ggdraw(a) + draw_plot(temp1, x = -0.25, y = -0.25, scale = .5)
 
+ggplot(pop) + geom_point(aes(x = age_range, y = population)) + theme_base()
+#overall pop dist-----------------------------------------------------------------------------------
+overall_pop_dist <- pop_pyr_format(pop) %>% 
+  ggplot(aes(x = age_range, y = population, fill = sex)) +  
+  geom_bar(stat = 'identity', width = .9) +   
+  geom_text(aes(x = age_range, y = 0, label = age_range), color = 'white', size = 4.5, nudge_x = .05) + 
+  coord_flip(ylim = c(-350000, 352000)) + 
+  scale_y_continuous(breaks = seq(-350000, 350000, 50000), 
+                   labels = paste0(as.character(c(seq(350, 0, -50), seq(50, 350, 50))), 'k')) +
+  scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
+  theme_pub(axis_line = TRUE) + 
+  labs(x = 'Age Range\n', y = '\nPopulation') +
+  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),
+        panel.grid.major = element_line(size = .75),
+        axis.title = element_text(color = 'Grey40', size = 14),
+        axis.title.y = element_text(hjust = .94),
+        axis.line.x = element_line(color = 'Grey 55'),
+        axis.text = element_text(color = 'Grey 48')) +
+  no_major_y_gridlines() +
+  no_legend() + 
+  no_y_text() + 
+  no_y_line() + 
+  no_y_ticks() + 
+  annotate(geom = 'text', x = 14.2, y = -274000, label = 'Female', color = women.scale[[4]], size = 3.5) +
+  annotate(geom = 'text', x = 14.2, y = 267000, label = 'Male', color = men.scale[[4]], size = 3.5)
 
-#overall pop dist
-pop_pyr_format(pop) %>% 
-  ggplot(aes(x = age_range, y = population, fill = sex)) +   # Fill column
-  geom_bar(stat = "identity", width = .6) +   # draw the bars
-  coord_flip(ylim = c(-350000, 350000)) +  # Flip axes
-  labs(title="Email Campaign Funnel") +
-  scale_y_continuous(breaks = seq(-50000, 50000, 10000), 
-                     labels = paste0(as.character(c(seq(50, 0, -10), seq(5, 50, 10))), "k")) +
-  theme(plot.title = element_text(hjust = .5), 
-        axis.ticks = element_blank()) +   # Centre plot title
-  scale_fill_manual(values = c(men.scale[5], women.scale[5]))
+
+grobs <- grobTree(
+  gp = gpar(fontsize = 14, fontface = 'bold'), 
+  textGrob(label = "Hong Kong Population Pyramid", name = "title1",
+           x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
+           hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
+  textGrob(label = "", name = "title2",
+           x = grobWidth("title1") + unit(2.24, "lines"), y = unit(-.5, "lines"),
+           hjust = 0, vjust = 0, gp = gpar(col = women.scale[5]))
+)
+
+gb <- ggplot_build(overall_pop_dist)
+gt <- ggplot_gtable(gb)
+gt$layout$clip[gt$layout$name=="panel"] <- "off"
+gg <- arrangeGrob(gt, top=grobs, padding = unit(2.6, "line"))
+grid.newpage()
+grid.draw(gg)
+
 #annotate to add mean ages of men and women
 
 # End pop pyramids---------------------------------------------------------------------------------------------------------
@@ -405,8 +423,10 @@ only_helpers <- with_helpers %>%
   mutate(population = with_helpers$population - without_helpers$population) %>% 
   filter(population != 0)
 
-sum(only_helpers$population, na.rm = TRUE) #domestic workers in Hong Kong
+sum(only_helpers$population, na.rm = TRUE) #domestic helpers in Hong Kong
 sum(only_helpers$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE) #percent of total pop
+sum(filter(pop, age_range == '0 - 4' | age_range == '5 - 9')$population, na.rm = TRUE) / sum(only_helpers$population, na.rm = TRUE)
+# 4.38% dom helpers, 9.41% immigrants
 
 only_helpers %>% 
   group_by(sex, ethnicity) %>% 
@@ -417,7 +437,7 @@ only_helpers %>%
   geom_text(aes(label = population), vjust = -1) + 
   facet_wrap(~ethnicity, scale = 'free_y') 
 
-only_helpers %>% 
+only_helpers %>%  #male helpers
   group_by(sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>%
   mutate(prop = population / sum(population)) %>% 
@@ -426,7 +446,7 @@ only_helpers %>%
   geom_text(aes(label = prop), vjust = -1) 
 
 
-only_helpers %>% 
+only_helpers %>% #male helpers
   group_by(ethnicity) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
@@ -434,6 +454,13 @@ only_helpers %>%
   geom_col() + 
   geom_text(aes(label = percent(prop)), vjust = -1)
 
+sum(filter(pop, nationality == 'Chinese (HK Resident)' & sex == 'male' & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE) / sum(filter(pop, nationality == 'Chinese (HK Resident)'& (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE)
+
+pop %>% 
+  filter(nationality == 'Chinese (HK Resident)' & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))
+
+#3.3% of the 56 to 44 number comes from domestic helpers
+sum(filter(with_helpers, sex == 'male' & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE) / sum(filter(with_helpers, (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE)
 
 
 #---------------------------------------------------------------------------------------------------------------------------

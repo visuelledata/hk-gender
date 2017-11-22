@@ -17,21 +17,21 @@ description: ''
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Women significantly outnumber men in Hong Kong. In this article, I will show you how badly men are outnumbered and how significant the gap is. 
+Women significantly outnumber men in Hong Kong. In this article, I will show you the degree to which men are outnumbered and how significant the gap is. 
 
 ## How badly do women outnumber men?
 
 Women make up `r percent(sum(filter(pop, sex == 'female')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE))` of the population, while men make up `r percent(1 - sum(filter(pop, sex == 'female')$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE))` of the population. 
 
-This might not seem so bad, but I'm going to break it down to give you a better picture. First lets look at a population pyramid so we can get an idea of what Hong Kong's population looks like. 
+This might not seem so bad, but I'm going to break it down to give you a better picture. First, lets look at a population pyramid so we can get an idea of what the distribution of Hong Kong's population looks like. 
 
 ```{r cars}
-#population pyramid
+#overall pop dist
 ```
 
-From this we see that people from 30-59 make up most of the population of Hong Kong with men being older on average than women. 
+From this we see that people from 30-59 make up a large portion of the population with men being older on average than women. 
 
-Now, I'll put the percent of women in each age group next to the percent of men in each age group. 
+Now, I'll put the bars side by side as percentages, so it will be easier to compare them.  
 
 ```{r pressure, echo=FALSE}
 #population by age and gender
@@ -47,7 +47,7 @@ These points are quite interesting, but they can be easily explained.
 For the left side:
 More boys than girls are born globally, you can read about this phenomena here. INSERT HYPERLINK
 For the right side:
-Women have significantly longer life spans. 
+Women across the globe have higher life expectancies than men. 
 
 So from here we will only look at the data for 20-59 year olds as shown below.
 
@@ -68,7 +68,18 @@ You can look at the graph below to see which nationalities contribute the most w
 #diverging lollipop
 ```
 
-This graph shows us that the Filipinos and Indonesians contribute almost as many women to the gender gap as the locals of Hong Kong, despite making up a much smaller portion of the overall population. This is likely due to the large numbers of domestic helpers employed by families in Hong Kong, which are almost all women from The Philippines and Indonesia. 
+This graph shows us that the Filipinos and Indonesians contribute almost as many women to the gender gap as the locals of Hong Kong, despite making up a much smaller portion of the overall population. This is likely due to the large numbers of domestic helpers employed by families in Hong Kong, which are almost all women from The Philippines and Indonesia.
+
+So now lets see how the ratio of men to women changes if we exclude domestic helpers from our data. 
+```{r }
+#two basic bar charts showing how the ratio of men to women change with and without domestic helpers.
+```
+
+As you can see from the graphs above, domestic helpers are not responsible to the imbalance of men and women, but they do contribute to it. 
+
+For example, there are `r sum(filter(pop, age_range == '0 - 4' | age_range == '5 - 9')$population, na.rm = TRUE)` children between the ages of 0 and 9, while there are `r sum(filter(pop, age_range == '0 - 4' | age_range == '5 - 9')$population, na.rm = TRUE)` domestic helpers in Hong Kong. 
+
+In other words, there are 1.77 children under 10 years old for each domestic helper in Hong Kong. It should be noted that this number is somewhat misleading, because domestic helpers are hired for a variety of reasons including the care of the elderly. However, domestic helpers make up `r sum(only_helpers$population, na.rm = TRUE) / sum(pop$population, na.rm = TRUE)` of the population of Hong Kong, and they undeniably affect the social atmosphere of Hong Kong. 
 
 
 
