@@ -8,6 +8,7 @@ library(gridExtra)
 library(RColorBrewer)
 library(cowplot)
 
+
 pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nationality
                                   na = '-',
                                   col_types = cols(Australian = col_integer(), 
@@ -18,12 +19,6 @@ pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nation
                                                    Thai = col_integer()))     #upload data and assign column types
 
 
-
-source("annotate_color.R") #load annotate_color()
-
-# To Do: clean graphs, population distribution HK, distribution by nationality, ...
-
-
 pop$age_range <- factor(pop$age_range, levels = unique(pop$age_range))
 pop$sex <- factor(pop$sex, levels = unique(pop$sex))
 
@@ -32,25 +27,55 @@ pop <- pop %>%
   mutate(prop = population / sum(population, na.rm = TRUE))
 
 
-
-
+#Color Palettes
 women.scale <- brewer.pal(9, "Reds")
 men.scale <- brewer.pal(9, "Blues")
 sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 
 
+# To Do: clean graphs
 
+# Functions-----------------------------------------------------------------------------------------------------------------
+source("annotate_color.R") #load annotate_color()
 
-
-
-
-
-
+title_align_no_clip <- function(plot = NULL, title_segments = NULL, colors = NULL, filename = NULL){
+  # Preformat the graph for the title
+  plot = plot + theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),   
+                      axis.title = element_text(color = 'Grey40', size = 14),
+                      axis.title.y = element_text(hjust = .94),
+                      axis.line.x = element_line(color = 'Grey 55'),
+                      axis.text = element_text(color = 'Grey 48'))
+  
+  # Create a set of grobs
+  grobs <- grobTree(   
+    gp = gpar(fontsize = 14, fontface = 'bold'),
+    textGrob(label = title_segments[1], name = "title1",  
+             x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
+             hjust = 0, vjust = 0, 
+             gp = gpar(col = colors[1])),
+    
+    if(length(title_segments) == 2){
+      textGrob(label = title_segments[2], name = "title2",
+               x = grobWidth("title1") + unit(2.24, "lines"), y = unit(-.5, "lines"),
+               hjust = 0, vjust = 0, gp = gpar(col = colors[2]))
+    }
+  )
+  
+  # Turn off clipping and draw plot
+  gb <- ggplot_build(plot) # Puts plot into a usable format
+  gt <- ggplot_gtable(gb) # puts grobs into a table to allow the object to be manipulated
+  gt$layout$clip[gt$layout$name=="panel"] <- "off" # removes clipping with graph borders 
+  gg <- arrangeGrob(gt, top = grobs, padding = unit(2.6, "line")) # places above grobs into a gtable
+  grid.newpage() # makes a blank graphing window for ggplot2
+  grid.draw(gg) # draws the plot
+  
+  # Save the plot
+  if(!is.null(filename)) ggsave(filename, plot = gg)
+}
 
 
 
 # Exploratory data analysis------------------------------------------------------------------------------------------
-
 
 pop %>%  
   filter(age_range != '0 - 4' & age_range != '80 - 84' & age_range != '85+') %>%
@@ -61,8 +86,6 @@ pop %>%
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') + 
   facet_wrap(~nationality, scale = 'free_y') #add this as an interactive graph
   
-
-
 
 
 
@@ -157,11 +180,6 @@ pop %>%
   geom_col() + 
   geom_text(aes(label = percent(prop)), 
             color = 'white', vjust = 1.5) 
-# End---------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 # Population by Nationality--------------------------------------------------------------------------------------------
 pop %>% 
@@ -211,8 +229,6 @@ minority <- pop %>%
   mutate(prop = population / sum(population)) %>% 
   arrange(desc(prop))
 minority$prop[1] + minority$prop[2] + minority$prop[3] + minority$prop[5] + minority$prop[6]  
-
-#End- Population by nationality-------------------------------------------------------------------------------------------
 
 
 # Bar chart nationality------------------------------------------------------------------------------------------------------
@@ -274,8 +290,6 @@ grid.newpage()
 grid.draw(gg)
 
 ggsave('bar_nation.jpeg', gg)
-# End- Bar chart nationality-----------------------------------------------------------------------------------------
-
 
 # Population Pyramids-----------------------------------------------------------------------------------------------------
 pop_pyr_format <- function(data, filter_cat = NA){ 
@@ -332,23 +346,24 @@ gganimate(bar_nationality, 'bars.gif')
 ggdraw(a) + draw_plot(temp1, x = -0.25, y = -0.25, scale = .5)
 
 ggplot(pop) + geom_point(aes(x = age_range, y = population)) + theme_base()
+
 #overall pop dist-----------------------------------------------------------------------------------
 overall_pop_dist <- pop_pyr_format(pop) %>% 
   ggplot(aes(x = age_range, y = population, fill = sex)) +  
   geom_bar(stat = 'identity', width = .9) +   
   geom_text(aes(x = age_range, y = 0, label = age_range), color = 'white', size = 4.5, nudge_x = .05) + 
-  coord_flip(ylim = c(-350000, 352000)) + 
-  scale_y_continuous(breaks = seq(-350000, 350000, 50000), 
-                   labels = paste0(as.character(c(seq(350, 0, -50), seq(50, 350, 50))), 'k')) +
+  coord_flip(ylim = c(-600000, 600000)) + 
+  scale_y_continuous(breaks = seq(-600000, 600000, 50000), 
+                   labels = paste0(as.character(c(seq(600, 0, -50), seq(50, 600, 50))), 'k')) +
   scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
   theme_pub(axis_line = TRUE) + 
   labs(x = 'Age Range\n', y = '\nPopulation') +
-  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),
+  theme(#plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),
         panel.grid.major = element_line(size = .75),
-        axis.title = element_text(color = 'Grey40', size = 14),
-        axis.title.y = element_text(hjust = .94),
-        axis.line.x = element_line(color = 'Grey 55'),
-        axis.text = element_text(color = 'Grey 48')) +
+        #axis.title = element_text(color = 'Grey40', size = 14),
+        #axis.title.y = element_text(hjust = .94),
+        #axis.line.x = element_line(color = 'Grey 55'),
+        axis.text = element_text(size = 8.35)) +
   no_major_y_gridlines() +
   no_legend() + 
   no_y_text() + 
@@ -357,27 +372,13 @@ overall_pop_dist <- pop_pyr_format(pop) %>%
   annotate(geom = 'text', x = 14.2, y = -274000, label = 'Female', color = women.scale[[4]], size = 3.5) +
   annotate(geom = 'text', x = 14.2, y = 267000, label = 'Male', color = men.scale[[4]], size = 3.5)
 
+title_align_no_clip(plot = overall_pop_dist, 
+                    title_segments = c('Hong Kong Population Pyramid'),
+                    filename = 'overall_pop_dist.jpeg')
 
-grobs <- grobTree(
-  gp = gpar(fontsize = 14, fontface = 'bold'), 
-  textGrob(label = "Hong Kong Population Pyramid", name = "title1",
-           x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
-           hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
-  textGrob(label = "", name = "title2",
-           x = grobWidth("title1") + unit(2.24, "lines"), y = unit(-.5, "lines"),
-           hjust = 0, vjust = 0, gp = gpar(col = women.scale[5]))
-)
 
-gb <- ggplot_build(overall_pop_dist)
-gt <- ggplot_gtable(gb)
-gt$layout$clip[gt$layout$name=="panel"] <- "off"
-gg <- arrangeGrob(gt, top=grobs, padding = unit(2.6, "line"))
-grid.newpage()
-grid.draw(gg)
+#annotate to add mean ages of men and women?
 
-#annotate to add mean ages of men and women
-
-# End pop pyramids---------------------------------------------------------------------------------------------------------
 
 #Diverging Bars-------------------------------------------------------------------------------------------------------
 #how many women does each nationality contribute to this age_range?
@@ -409,6 +410,7 @@ temp2 %>%
 
 ggsave('women-men.jpeg', plot = last_plot())
 #group negatives together? reorder from inc to dec
+
 
 # Only Helpers-------------------------------------------------------------------------------------------------------------------
 without_helpers <- read_csv("withouthelpers-preclean.csv", #this data is by ethnicity
@@ -463,16 +465,8 @@ pop %>%
 sum(filter(with_helpers, sex == 'male' & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE) / sum(filter(with_helpers, (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE)
 
 
-#---------------------------------------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-
+# Misc-------------------------------------------------------------------------------------------------------------
 
 ####look into
 #pop %>%  
@@ -520,4 +514,6 @@ pop %>%
     geom_hline(yintercept = .5, linetype = 'dashed', color = 'grey35') +
     theme(plot.margin = unit(c(0,0, 0, 0), 'cm'))
   ggsave('circleplot.jpg', plot = last_plot())
+  
+  
   
