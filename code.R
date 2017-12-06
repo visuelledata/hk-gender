@@ -5,10 +5,9 @@ library(scales)
 library(stringr)
 library(grid)
 library(gridExtra)
-library(RColorBrewer)
 library(cowplot)
 
-
+# Setup--------------------------------------------------------------------------------------------------------------------------
 pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nationality
                                   na = '-',
                                   col_types = cols(Australian = col_integer(), 
@@ -28,17 +27,22 @@ pop <- pop %>%
 
 
 #Color Palettes
-women.scale <- brewer.pal(9, "Reds")
-men.scale <- brewer.pal(9, "Blues")
+women.scale <- RColorBrewer::brewer.pal(9, "Reds")
+men.scale <- RColorBrewer::brewer.pal(9, "Blues")
 sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 
 
 # To Do: clean graphs
 
+
 # Functions-----------------------------------------------------------------------------------------------------------------
 source("annotate_color.R") #load annotate_color()
 
-title_align_no_clip <- function(plot = NULL, title_segments = NULL, colors = NULL, filename = NULL){
+title_align_no_clip <- function(plot = last_plot(), title_segments, colors, filename = NULL){
+  
+  if (is.null(title_segments) || is.null(colors)){
+    stop('Missing one of the arguments: labels, colors, x, or y')}
+  
   # Preformat the graph for the title
   plot = plot + theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),   
                       axis.title = element_text(color = 'Grey40', size = 14),
@@ -74,6 +78,25 @@ title_align_no_clip <- function(plot = NULL, title_segments = NULL, colors = NUL
 }
 
 
+pop_pyr_format <- function(data, filter_cat = NA){ 
+  if (!is.na(filter_cat)){
+    women <- pop %>% 
+      filter(nationality == filter_cat) %>%
+      mutate(population = (population * -1),
+             prop = (prop * -1))
+    men <- pop %>% 
+      filter(nationality == filter_cat)
+    pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male')) 
+    return(pop_pyr_data)
+  } else {
+    women <- pop %>% 
+      mutate(population = (population * -1),
+             prop = (prop * -1))
+    men <- pop
+    pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male'))
+    return(pop_pyr_data)
+  }
+}
 
 # Exploratory data analysis------------------------------------------------------------------------------------------
 
@@ -86,6 +109,7 @@ pop %>%
   geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') + 
   facet_wrap(~nationality, scale = 'free_y') #add this as an interactive graph
   
+
 
 
 
@@ -135,6 +159,11 @@ pop %>%   #consider putting next to other plots so
   scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
   theme(axis.text.x = element_text(angle = 90))
 
+title_align_no_clip(title_segments = c('4 of the 5 largest nationalities are dominated by ', 'Women'),
+                    colors = c('Grey25', women.scale[5]))
+
+
+
 #highlight ends
 pop %>%  
   group_by(age_range, sex) %>% 
@@ -145,9 +174,9 @@ pop %>%
   mutate(condition = any(condition)) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
   geom_linerange(aes(ymin = 0, ymax = prop), 
-                 position = position_dodge(width = .5), color = 'grey80') + 
+                 position = position_dodge(width = .5), color = 'grey85') + 
   geom_point(aes(), 
-             size = 5, position = position_dodge(width = .5), color = 'grey80') + 
+             size = 5, position = position_dodge(width = .5), color = 'grey85') + 
   geom_point(aes(alpha = condition), 
              size = 5, position = position_dodge(width = .5)) + 
   scale_color_manual(values = c(men.scale[6], women.scale[6])) 
@@ -180,6 +209,7 @@ pop %>%
   geom_col() + 
   geom_text(aes(label = percent(prop)), 
             color = 'white', vjust = 1.5) 
+
 
 # Population by Nationality--------------------------------------------------------------------------------------------
 pop %>% 
@@ -242,8 +272,11 @@ pop_by_nation <- pop %>%
   group_by(nationality, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
-  mutate(condition = nationality == 'Filipino' | nationality == 'Indonesian' |
-                     nationality == 'Chinese (Temp Resident)' | nationality == 'British' | nationality == 'Indian') %>% 
+  mutate(condition = nationality == 'Filipino' | 
+                     nationality == 'Indonesian' |
+                     nationality == 'Chinese (Temp Resident)' | 
+                     nationality == 'British' | 
+                     nationality == 'Indian') %>% 
   ggplot(aes(x = fct_reorder2(nationality, sex, -prop), y = prop, fill = sex)) + 
   geom_col(width = .8, fill = 'grey 90') +
   geom_col(aes(alpha = condition, fill = sex), width = .8) +
@@ -261,55 +294,19 @@ pop_by_nation <- pop %>%
             vjust = 1.3, color = 'Grey95', size = 3.5) + 
   no_legend() + 
   labs(x = '\nNationality', y = 'Percent of women in group\n') + 
-  theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"), #  top, right, bottom, left
-        axis.title = element_text(color = 'Grey40', size = 14),
-        axis.title.y = element_text(hjust = .94),
-        axis.line.x = element_line(color = 'Grey 55'),
-        axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16),
+  theme(axis.text = element_text(angle = 30, hjust = 1.1, vjust = -16),
         axis.ticks = element_line(color = 'Grey 60'),
         axis.ticks.length = unit(0, "cm")) + 
   annotate('text', x = 13.33, y = 1.01, label = '---------100%', color = 'grey 50', size = 4)
 
-
-grobs <- grobTree(
-  gp = gpar(fontsize = 14, fontface = 'bold'), 
-  textGrob(label = "4 of the 5 largest nationalities are dominated by ", name = "title1",
-           x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
-           hjust = 0, vjust = 0, gp = gpar(col = 'Grey 23')),
-  textGrob(label = "Women", name = "title2",
-           x = grobWidth("title1") + unit(2.24, "lines"), y = unit(-.5, "lines"),
-           hjust = 0, vjust = 0, gp = gpar(col = women.scale[5]))
-)
+title_align_no_clip(plot = pop_by_nation, 
+                    title_segments = c('4 of the 5 largest nationalities are dominated by ', 'Women'),
+                    colors = c('Grey25', women.scale[5]),
+                    filename = 'bar_nation.jpeg')
 
 
-gb <- ggplot_build(pop_by_nation)
-gt <- ggplot_gtable(gb)
-gt$layout$clip[gt$layout$name=="panel"] <- "off"
-gg <- arrangeGrob(gt, top=grobs, padding = unit(2.6, "line"))
-grid.newpage()
-grid.draw(gg)
-
-ggsave('bar_nation.jpeg', gg)
 
 # Population Pyramids-----------------------------------------------------------------------------------------------------
-pop_pyr_format <- function(data, filter_cat = NA){ 
-  if (!is.na(filter_cat)){
-  women <- pop %>% 
-    filter(nationality == filter_cat) %>%
-    mutate(population = (population * -1))
-  men <- pop %>% 
-    filter(nationality == filter_cat)
-  pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male')) 
-  return(pop_pyr_data)
-  } else {
-    women <- pop %>% 
-      mutate(population = (population * -1))
-    men <- pop
-    pop_pyr_data <- bind_rows(subset(women, sex == 'female'), subset(men, sex == 'male'))
-    return(pop_pyr_data)
-  }
-}
-
 pyramid_nationality <- pop_pyr_format(pop) %>% 
   filter(nationality != 'Chinese (HK Resident)') %>% 
   ggplot(aes(x = age_range, y = population, fill = sex, frame = nationality)) +   # Fill column
@@ -349,31 +346,31 @@ ggplot(pop) + geom_point(aes(x = age_range, y = population)) + theme_base()
 
 #overall pop dist-----------------------------------------------------------------------------------
 overall_pop_dist <- pop_pyr_format(pop) %>% 
-  ggplot(aes(x = age_range, y = population, fill = sex)) +  
+  ggplot(aes(x = age_range, y = prop, fill = sex)) +  
   geom_bar(stat = 'identity', width = .9) +   
-  geom_text(aes(x = age_range, y = 0, label = age_range), color = 'white', size = 4.5, nudge_x = .05) + 
-  coord_flip(ylim = c(-600000, 600000)) + 
-  scale_y_continuous(breaks = seq(-600000, 600000, 50000), 
-                   labels = paste0(as.character(c(seq(600, 0, -50), seq(50, 600, 50))), 'k')) +
+  geom_text(aes(x = age_range, y = 0, label = age_range), 
+            color = 'white', size = 4.5, nudge_x = .05) + 
+  coord_flip(ylim = c(-.1, .1)) +
+  scale_y_continuous(breaks = seq(-.1, .1, .02), 
+                     labels = paste0(as.character(c(seq(10, 0, -2), seq(2, 10, 2))), '%')) +
   scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
   theme_pub(axis_line = TRUE) + 
   labs(x = 'Age Range\n', y = '\nPopulation') +
-  theme(#plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),
-        panel.grid.major = element_line(size = .75),
-        #axis.title = element_text(color = 'Grey40', size = 14),
-        #axis.title.y = element_text(hjust = .94),
-        #axis.line.x = element_line(color = 'Grey 55'),
+  theme(panel.grid.major = element_line(size = .75),
         axis.text = element_text(size = 8.35)) +
   no_major_y_gridlines() +
   no_legend() + 
   no_y_text() + 
   no_y_line() + 
-  no_y_ticks() + 
-  annotate(geom = 'text', x = 14.2, y = -274000, label = 'Female', color = women.scale[[4]], size = 3.5) +
-  annotate(geom = 'text', x = 14.2, y = 267000, label = 'Male', color = men.scale[[4]], size = 3.5)
+  no_y_ticks() +
+  annotate(geom = 'text', x = 14.2, y = -.0725, 
+           label = 'Female', color = women.scale[[4]], size = 3.5) +
+  annotate(geom = 'text', x = 14.2, y = .065, 
+           label = 'Male', color = men.scale[[4]], size = 3.5)
 
 title_align_no_clip(plot = overall_pop_dist, 
                     title_segments = c('Hong Kong Population Pyramid'),
+                    colors = c('Grey25'),
                     filename = 'overall_pop_dist.jpeg')
 
 
@@ -390,6 +387,7 @@ temp1 <- pop %>%
   group_by(nationality, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   filter(sex == 'male') 
+
 temp2 <- pop %>% 
   filter(age_range == '20 - 24' | age_range == '25 - 29'|
            age_range == '30 - 34' | age_range == '35 - 39'|
@@ -398,6 +396,7 @@ temp2 <- pop %>%
   group_by(nationality, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   filter(sex == 'female')
+
 temp2$population <- temp2$population - temp1$population
 
 temp2 %>% 

@@ -1,13 +1,9 @@
 ## This function will allow you to assign color to each word in a plot annotation
 # Dependencies: purrr, ggplot2
 
-annotate_color <- function(geom = 'text', x = NULL, y = NULL, xmin = NULL, xmax = NULL,  
+annotate_color <- function(geom = 'text', x, y, xmin = NULL, xmax = NULL,  
                            ymin = NULL, ymax = NULL, xend = NULL, yend = NULL, ...,
-                           labels = NULL, colors = NULL, default_color = 'black'){
-  
-  # Checks for essential arguments
-  if (is.null(colors) || is.null(x) || is.null(y) || is.null(labels)){
-    stop('Missing one of the arguments: labels, colors, x, or y')}
+                           labels, colors, default_color = 'black'){
   
   
   labels <- strsplit(labels, " ")[[1]] 
