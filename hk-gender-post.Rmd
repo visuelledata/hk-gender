@@ -27,6 +27,32 @@ This might not seem excessive, but I'm going to break it down to give you a bett
 
 ```{r cars}
 #overall pop dist
+overall_pop_dist <- pop_pyr_format(pop) %>% 
+  ggplot(aes(x = age_range, y = prop, fill = sex)) +  
+  geom_bar(stat = 'identity', width = .9) +   
+  geom_text(aes(x = age_range, y = 0, label = age_range), 
+            color = 'white', size = 4.5, nudge_x = .05) + 
+  coord_flip(ylim = c(-.1, .1)) +
+  scale_y_continuous(breaks = seq(-.1, .1, .02), 
+                     labels = paste0(as.character(c(seq(10, 0, -2), seq(2, 10, 2))), '%')) +
+  scale_fill_manual(values = c(men.scale[5], women.scale[5])) + 
+  theme_pub(axis_line = TRUE) + 
+  labs(x = 'Age Range\n', y = '\nPopulation') +
+  theme(panel.grid.major = element_line(size = .75),
+        axis.text = element_text(size = 8.35)) +
+  no_major_y_gridlines() +
+  no_legend() + 
+  no_y_text() + 
+  no_y_line() + 
+  no_y_ticks() +
+  annotate(geom = 'text', x = 14.2, y = -.0725, 
+           label = 'Female', color = women.scale[[4]], size = 3.5) +
+  annotate(geom = 'text', x = 14.2, y = .065, 
+           label = 'Male', color = men.scale[[4]], size = 3.5)
+
+title_align_no_clip(plot = overall_pop_dist, 
+                    title_segments = c('Hong Kong Population Pyramid'),
+                    colors = c('Grey25'))
 ```
 
 From this we see that people from 30-59 make up a large portion of the population with women outnumbering men. 

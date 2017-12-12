@@ -38,17 +38,24 @@ sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 # Functions-----------------------------------------------------------------------------------------------------------------
 source("annotate_color.R") #load annotate_color()
 
-title_align_no_clip <- function(plot = last_plot(), title_segments, colors, filename = NULL){
+title_align_no_clip <- function(plot = last_plot(), title_segments, colors, filename = NULL, 
+                                axis_title_color = 'Grey40',
+                                axis_x_line_color = 'Grey55',
+                                axis_y_line_color = 'Grey55',
+                                axis_text_color = 'Grey48',
+                                tick_color = 'Grey55'){
   
   if (is.null(title_segments) || is.null(colors)){
     stop('Missing one of the arguments: labels, colors, x, or y')}
   
   # Preformat the graph for the title
   plot = plot + theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),   
-                      axis.title = element_text(color = 'Grey40', size = 14),
+                      axis.title = element_text(color = axis_title_color, size = 14),
                       axis.title.y = element_text(hjust = .94),
-                      axis.line.x = element_line(color = 'Grey 55'),
-                      axis.text = element_text(color = 'Grey 48'))
+                      axis.line.x = element_line(color = axis_x_line_color),
+                      axis.line.y = element_line(color = axis_y_line_color),
+                      axis.text = element_text(color = axis_text_color),
+                      axis.ticks = element_line(color = tick_color))
   
   # Create a set of grobs
   grobs <- grobTree(   
@@ -153,14 +160,25 @@ pop %>%   #consider putting next to other plots so
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_hline(yintercept = .5, linetype = 'dotted', color = 'grey20') + 
   geom_linerange(aes(ymin = 0, ymax = prop), 
-                 position = position_dodge(width = .7), color = 'grey60') + 
-  geom_point(size = 5, position = position_dodge(width = .7)) + 
+                 position = position_dodge(width = .6), color = 'grey60') + 
+  geom_point(size = 6, position = position_dodge(width = .6)) + 
+  labs(x = '\nAge range', y = 'Percent within age group\n') + 
   scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
-  theme(axis.text.x = element_text(angle = 90))
+  scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
+  no_legend()
+  
 
+#put balls closer together
 title_align_no_clip(title_segments = c('4 of the 5 largest nationalities are dominated by ', 'Women'),
-                    colors = c('Grey25', women.scale[5]))
+                    colors = c('Grey25', women.scale[5]),
+                    axis_title_color = 'Grey40', 
+                    axis_text_color =  'Grey40',
+                    axis_x_line_color = 'Grey35',
+                    axis_y_line_color = 'Grey35', 
+                    tick_color = 'Grey35')
 
 
 
