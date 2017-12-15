@@ -5,7 +5,6 @@ library(scales)
 library(stringr)
 library(grid)
 library(gridExtra)
-library(cowplot)
 
 # Setup--------------------------------------------------------------------------------------------------------------------------
 pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nationality
@@ -44,13 +43,15 @@ title_align_no_clip <- function(plot = last_plot(), title_segments, colors,
                                 axis_x_line_color = 'Grey55',
                                 axis_y_line_color = 'Grey55',
                                 axis_text_color = 'Grey48',
-                                tick_color = 'Grey55'){
+                                tick_color = 'Grey55',
+                                plot_margin = unit(c(.9, 1, 1, 1.2), "cm"),
+                                nudge_x = 0){
   
   if (is.null(title_segments) || is.null(colors)){
     stop('Missing one of the arguments: labels, colors, x, or y')}
   
   # Preformat the graph for the title
-  plot = plot + theme(plot.margin = unit(c(.9, 1, 1, 1.2), "cm"),   
+  plot = plot + theme(plot.margin = plot_margin,   
                       axis.title = element_text(color = axis_title_color, size = 14),
                       axis.title.y = element_text(hjust = .94),
                       axis.line.x = element_line(color = axis_x_line_color),
@@ -59,36 +60,37 @@ title_align_no_clip <- function(plot = last_plot(), title_segments, colors,
                       axis.ticks = element_line(color = tick_color))
   
   # Create a set of grobs
+
   grobs <- grobTree(  
     gp = gpar(fontsize = 14, fontface = 'bold'),
     
     textGrob(label = title_segments[1], name = "title1",  
-             x = unit(2.33, "lines"), y = unit(-.5, "lines"), 
+             x = unit(2.33 - nudge_x, "lines"), y = unit(-.5, "lines"), 
              hjust = 0, vjust = 0, 
              gp = gpar(col = colors[1])),
     
     if(length(title_segments) > 1){
       textGrob(label = title_segments[2], name = "title2",
-               x = grobWidth("title1") + unit(2.24, "lines"), 
+               x = grobWidth("title1") + unit(2.24 - nudge_x, "lines"), 
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[2]))
     },
     
     if(length(title_segments) > 2){
       textGrob(label = title_segments[3], name = "title3",
-               x = grobWidth("title1") + grobWidth("title2") + unit(2.24, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + unit(2.24 - nudge_x, "lines"), 
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[3]))
     },
     if(length(title_segments) > 3){
       textGrob(label = title_segments[4], name = "title4",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") +  unit(2.24, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") +  unit(2.24 - nudge_x, "lines"), 
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[4]))
     },
     if(length(title_segments) > 4){
       textGrob(label = title_segments[5], name = "title5",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") + grobWidth("title4") + unit(2.24, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") + grobWidth("title4") + unit(2.24 - nudge_x, "lines"), 
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[5]))
     }
@@ -143,44 +145,14 @@ pop %>%
 
 
 # Percent of women in age_group---------------------------------------------------------------------------------------------------------------
-pop %>%  #Try as lollipop chart 
+
+grouped <- pop %>%  
   group_by(age_range, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population)) %>% 
-  mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
-  mutate(condition = any(condition)) %>% 
-  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) + 
-  geom_hline(yintercept = .504, color = 'grey20', linetype = 'dashed', alpha = .7) + 
-  geom_col(position = "dodge", fill = "grey73") +
-  geom_col(aes(fill = sex, alpha = condition), position = "dodge") +
-  scale_color_manual(values = sex.scale) +
-  scale_fill_manual(values = sex.scale, guide = F) +
-  scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0)) + 
-  geom_text(aes(x = age_range, y = prop, fill = sex, label = percent(prop)), position = position_dodge(width = .9), vjust = .358, hjust = 1.1,size = 4, color = 'White') +
-  scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
-  coord_flip()+
-  theme_pub(axis_line = TRUE) +
-  no_gridlines() + 
-  no_x_axis() +
-  no_x_line() +
-  annotate_color(x = .6, y = .57, size = 3,
-                 labels = '- Global % of Women', 
-                 colors = c('grey20', 'grey20', 'grey20', 'grey20', '#E24645')) +
-  no_ticks() +
-  theme(axis.text.y=element_text(color = "grey55"),
-        plot.title = element_text(color = 'grey45', hjust = -.3, vjust = 5), 
-        plot.margin = unit(c(1,.5, .5, .5), 'cm')) + 
-  coord_flip() + 
-  no_legend() + 
-  labs(x = '', y = '', title = 'Women significantly outnumber men from 20 to 59 in Hong Kong')
-
-        #standardize all y axes to match and allow for easier reading
+  mutate(prop = population / sum(population))
 
 # population by age and gender
-pop %>%   #consider putting next to other plots so 
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population)) %>% 
+grouped %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
   geom_hline(yintercept = .5, linetype = 'dotted', color = 'grey20') + 
   geom_linerange(aes(ymin = 0, ymax = prop), 
@@ -203,10 +175,7 @@ title_align_no_clip(title_segments = c('Percent of ', 'men', ' and ', 'women ', 
 
 
 #highlight ends
-pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population)) %>% 
+grouped %>% 
   mutate(condition = sex == "female" & (age_range == '0 - 4' | age_range == '5 - 9' | age_range == '75 - 79' | 
                                         age_range == '80 - 84'| age_range == '85+')) %>%
   mutate(condition = any(condition)) %>% 
@@ -222,8 +191,13 @@ pop %>%
   scale_color_manual(values = c(men.scale[5], women.scale[5])) +
   scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
   theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
-  no_legend()
-#add annotations on plot
+  no_legend() + 
+  annotate(geom = 'text', x = .8, y = .59, hjust = 0, 
+           color = 'Grey50', size = 3.8,
+           label = c('More boys are born \nthan girls globally')) + 
+  annotate(geom = 'text', x = 14.1, y = .61, hjust = 0, 
+           color = 'Grey50', size = 3.8,
+           label = c('Women have longer \nlife expectancies than \nmen'))
 
 title_align_no_clip(title_segments = c('These data points are caused by ', 'birth', ' and ', 'life expectancy ', 'phenomena.'),
                     colors = c('Grey40', 'Grey20', 'Grey40', 'Grey20', 'Grey40'),
@@ -234,15 +208,7 @@ title_align_no_clip(title_segments = c('These data points are caused by ', 'birt
                     tick_color = 'Grey35')
 
 #highlight target
-grouped <- pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population))
-
-pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population)) %>% 
+target <- grouped %>% 
   mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
   mutate(condition = any(condition)) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
@@ -265,24 +231,21 @@ pop %>%
                                                           age_range == '50 - 54' | age_range == '55 - 59'), 
             aes(x = age_range, y = prop, fill = sex, label = percent(round(prop, digits = 2))), 
             color = 'white', size = 2.6, hjust = .75, vjust = .3) +
-  theme(axis.text.x = element_text(angle = 90)) + 
   labs(x = '\nAge range', y = 'Percent within age group\n') + 
   scale_color_manual(values = c(men.scale[5], women.scale[5])) +
   scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
-  theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
-  no_legend()
-
-title_align_no_clip(title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
-                    colors = c('Grey40', 'Grey30', 'Grey40', 'Grey30'),
-                    filename = 'highlight_target.jpeg',
-                    axis_title_color = 'Grey40', 
-                    axis_text_color =  'Grey40',
-                    axis_x_line_color = 'Grey35',
-                    axis_y_line_color = 'Grey35', 
-                    tick_color = 'Grey35')
+  theme(axis.text.x = element_text(angle = 90),
+        axis.title = element_text(color = 'Grey40', size = 14),
+        axis.title.y = element_text(hjust = .94),
+        axis.line.x = element_line(color = 'grey35'),
+        axis.line.y = element_line(color = 'grey35'),
+        axis.text = element_text(color = 'grey40'),
+        axis.ticks = element_line(color = 'grey35')) + 
+  no_legend() 
 
 
-pop %>%
+
+subplot <- pop %>%
   filter(age_range == '20 - 24' | age_range == '25 - 29'|
          age_range == '30 - 34' | age_range == '35 - 39'|
          age_range == '40 - 44' | age_range == '45 - 49'|
@@ -291,9 +254,38 @@ pop %>%
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
   ggplot(aes(x = sex, y = prop)) + 
-  geom_col() + 
+  geom_col(aes(fill = sex), width = .9) + 
   geom_text(aes(label = percent(prop)), 
-            color = 'white', vjust = 1.5) 
+            color = 'white', vjust = 1.5) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  scale_fill_manual(values = c(men.scale[4], women.scale[4]))+
+  no_y_axis() + 
+  no_x_text() + 
+  no_legend() + 
+  theme()
+
+ggdraw(target) + draw_plot(subplot, x = -0.25, y = -0.25, scale = 0.25)
+
+
+title_align_no_clip(title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
+                    colors = c('Grey40', 'Grey27', 'Grey40', 'Grey27'),
+                    filename = 'highlight_target.jpeg',
+                    axis_title_color = 'Grey40', 
+                    axis_text_color =  'Grey40',
+                    axis_x_line_color = 'Grey35',
+                    axis_y_line_color = 'Grey35', 
+                    tick_color = 'Grey35',
+                    plot_margin = unit(c(.9, 1, -.2, -.2), "cm"),
+                    nudge_x = 1.9) 
+
+unit(c(.9, 1, 1, 1.2), "cm")
+
+
+axis_title_color = 'Grey40', 
+axis_text_color =  'Grey40',
+axis_x_line_color = 'Grey35',
+axis_y_line_color = 'Grey35', 
+tick_color = 'Grey35'
 
 
 # Population by Nationality--------------------------------------------------------------------------------------------
@@ -451,7 +443,7 @@ overall_pop_dist <- pop_pyr_format(pop) %>%
   annotate(geom = 'text', x = 14.2, y = -.0725, 
            label = 'Female', color = women.scale[[4]], size = 3.5) +
   annotate(geom = 'text', x = 14.2, y = .065, 
-           label = 'Male', color = men.scale[[4]], size = 3.5)
+           label = 'Male', color = men.scale[[4]], size = 3.5) 
 
 title_align_no_clip(plot = overall_pop_dist, 
                     title_segments = c('Hong Kong Population Pyramid'),

@@ -15,6 +15,21 @@ description: ''
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(forcats)
+library(SciencesPo)
+library(scales)
+library(stringr)
+library(grid)
+library(gridExtra)
+
+grouped <- pop %>%  
+  group_by(age_range, sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>% 
+  mutate(prop = population / sum(population))
+
+
 ```
 
 Women significantly outnumber men in Hong Kong. In this paper, I will show you the degree to which men are outnumbered and how significant the gap is. 
@@ -61,12 +76,62 @@ Now, I'll put the bars side by side as percentages, so it will be easier to comp
 
 ```{r pressure, echo=FALSE}
 #population by age and gender
+grouped %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_hline(yintercept = .5, linetype = 'dotted', color = 'grey20') + 
+  geom_linerange(aes(ymin = 0, ymax = prop), 
+                 position = position_dodge(width = .5), color = 'grey60') + 
+  geom_point(size = 6, position = position_dodge(width = .5)) + 
+  labs(x = '\nAge range', y = 'Percent within age group\n') + 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) + 
+  scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
+  no_legend()
+  
+title_align_no_clip(title_segments = c('Percent of ', 'men', ' and ', 'women ', 'within each age group'),
+                    colors = c('Grey25', men.scale[4], 'Grey25', women.scale[4], 'Grey25'),
+                    axis_title_color = 'Grey40', 
+                    axis_text_color =  'Grey40',
+                    axis_x_line_color = 'Grey35',
+                    axis_y_line_color = 'Grey35', 
+                    tick_color = 'Grey35')
 ```
 
 First, lets look at some of the individual points
 
 ```{r }
 #highlight ends
+grouped %>% 
+  mutate(condition = sex == "female" & (age_range == '0 - 4' | age_range == '5 - 9' | age_range == '75 - 79' | 
+                                        age_range == '80 - 84'| age_range == '85+')) %>%
+  mutate(condition = any(condition)) %>% 
+  ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
+  geom_linerange(aes(ymin = 0, ymax = prop), 
+                 position = position_dodge(width = .5), color = 'grey95') + 
+  geom_linerange(aes(ymin = 0, ymax = prop, alpha = condition), 
+                 position = position_dodge(width = .5), color = 'grey50') + 
+  geom_point(size = 6, position = position_dodge(width = .5), color = 'grey95') + 
+  geom_point(aes(alpha = condition), 
+             size = 6, position = position_dodge(width = .5)) + 
+  labs(x = '\nAge range', y = 'Percent within age group\n') + 
+  scale_color_manual(values = c(men.scale[5], women.scale[5])) +
+  scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
+  no_legend() + 
+  annotate(geom = 'text', x = .8, y = .59, hjust = 0, 
+           color = 'Grey50', size = 3.8,
+           label = c('More boys are born \nthan girls globally')) + 
+  annotate(geom = 'text', x = 14.1, y = .61, hjust = 0, 
+           color = 'Grey50', size = 3.8,
+           label = c('Women have longer \nlife expectancies than \nmen'))
+
+title_align_no_clip(title_segments = c('These data points are caused by ', 'birth', ' and ', 'life expectancy ', 'phenomena.'),
+                    colors = c('Grey40', 'Grey20', 'Grey40', 'Grey20', 'Grey40'),
+                    axis_title_color = 'Grey40', 
+                    axis_text_color =  'Grey40',
+                    axis_x_line_color = 'Grey35',
+                    axis_y_line_color = 'Grey35', 
+                    tick_color = 'Grey35')
 ```
 
 These points are quite interesting, but they can be easily explained.
