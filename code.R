@@ -60,41 +60,41 @@ title_align_no_clip <- function(plot = last_plot(), title_segments, colors,
                       axis.ticks = element_line(color = tick_color))
   
   # Create a set of grobs
-
-  grobs <- grobTree(  
+  grobs <- grobTree(
     gp = gpar(fontsize = 14, fontface = 'bold'),
-    
-    textGrob(label = title_segments[1], name = "title1",  
-             x = unit(2.33 - nudge_x, "lines"), y = unit(-.5, "lines"), 
-             hjust = 0, vjust = 0, 
-             gp = gpar(col = colors[1])),
-    
+
+    textGrob(label = title_segments[1], name = "title1",
+             x = unit(2.33 - nudge_x, "lines"),
+             y = unit(-.5, "lines"),
+             hjust = 0, vjust = 0, gp = gpar(col = colors[1])),
+
     if(length(title_segments) > 1){
       textGrob(label = title_segments[2], name = "title2",
-               x = grobWidth("title1") + unit(2.24 - nudge_x, "lines"), 
+               x = grobWidth("title1") + unit(2.24 - nudge_x, "lines"),
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[2]))
     },
-    
+
     if(length(title_segments) > 2){
       textGrob(label = title_segments[3], name = "title3",
-               x = grobWidth("title1") + grobWidth("title2") + unit(2.24 - nudge_x, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + unit(2.24 - nudge_x, "lines"),
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[3]))
     },
     if(length(title_segments) > 3){
       textGrob(label = title_segments[4], name = "title4",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") +  unit(2.24 - nudge_x, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") +  unit(2.24 - nudge_x, "lines"),
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[4]))
     },
     if(length(title_segments) > 4){
       textGrob(label = title_segments[5], name = "title5",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") + grobWidth("title4") + unit(2.24 - nudge_x, "lines"), 
+               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") + grobWidth("title4") + unit(2.24 - nudge_x, "lines"),
                y = unit(-.5, "lines"),
                hjust = 0, vjust = 0, gp = gpar(col = colors[5]))
     }
   )
+  
   
   # Turn off clipping and draw plot
   gb <- ggplot_build(plot) # Puts plot into a usable format
@@ -105,7 +105,7 @@ title_align_no_clip <- function(plot = last_plot(), title_segments, colors,
   grid.draw(gg) # draws the plot
   
   # Save the plot
-  if(!is.null(filename)) ggsave(filename, plot = gg, width = save_width, height = save_height )
+  if(!is.null(filename)) ggsave(filename, plot = gg, width = save_width, height = save_height)
 }
 
 
@@ -278,7 +278,6 @@ title_align_no_clip(title_segments = c('From now on, ', 'this data ', 'will be o
                     plot_margin = unit(c(.9, 1, -.2, -.2), "cm"),
                     nudge_x = 1.9) 
 
-unit(c(.9, 1, 1, 1.2), "cm")
 
 
 axis_title_color = 'Grey40', 
