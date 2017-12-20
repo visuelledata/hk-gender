@@ -37,76 +37,7 @@ sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 # Functions-----------------------------------------------------------------------------------------------------------------
 source('annotate_color.R') #load annotate_color()
 
-title_align_no_clip <- function(plot = last_plot(), title_segments, colors, 
-                                filename = NULL, save_width = NA, save_height = NA, 
-                                axis_title_color = 'Grey40',
-                                axis_x_line_color = 'Grey55',
-                                axis_y_line_color = 'Grey55',
-                                axis_text_color = 'Grey48',
-                                tick_color = 'Grey55',
-                                plot_margin = unit(c(.9, 1, 1, 1.2), "cm"),
-                                nudge_x = 0){
-  
-  if (is.null(title_segments) || is.null(colors)){
-    stop('Missing one of the arguments: labels, colors, x, or y')}
-  
-  # Preformat the graph for the title
-  plot = plot + theme(plot.margin = plot_margin,   
-                      axis.title = element_text(color = axis_title_color, size = 14),
-                      axis.title.y = element_text(hjust = .94),
-                      axis.line.x = element_line(color = axis_x_line_color),
-                      axis.line.y = element_line(color = axis_y_line_color),
-                      axis.text = element_text(color = axis_text_color),
-                      axis.ticks = element_line(color = tick_color))
-  
-  # Create a set of grobs
-  grobs <- grobTree(
-    gp = gpar(fontsize = 14, fontface = 'bold'),
-
-    textGrob(label = title_segments[1], name = "title1",
-             x = unit(2.33 - nudge_x, "lines"),
-             y = unit(-.5, "lines"),
-             hjust = 0, vjust = 0, gp = gpar(col = colors[1])),
-
-    if(length(title_segments) > 1){
-      textGrob(label = title_segments[2], name = "title2",
-               x = grobWidth("title1") + unit(2.24 - nudge_x, "lines"),
-               y = unit(-.5, "lines"),
-               hjust = 0, vjust = 0, gp = gpar(col = colors[2]))
-    },
-
-    if(length(title_segments) > 2){
-      textGrob(label = title_segments[3], name = "title3",
-               x = grobWidth("title1") + grobWidth("title2") + unit(2.24 - nudge_x, "lines"),
-               y = unit(-.5, "lines"),
-               hjust = 0, vjust = 0, gp = gpar(col = colors[3]))
-    },
-    if(length(title_segments) > 3){
-      textGrob(label = title_segments[4], name = "title4",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") +  unit(2.24 - nudge_x, "lines"),
-               y = unit(-.5, "lines"),
-               hjust = 0, vjust = 0, gp = gpar(col = colors[4]))
-    },
-    if(length(title_segments) > 4){
-      textGrob(label = title_segments[5], name = "title5",
-               x = grobWidth("title1") + grobWidth("title2") + grobWidth("title3") + grobWidth("title4") + unit(2.24 - nudge_x, "lines"),
-               y = unit(-.5, "lines"),
-               hjust = 0, vjust = 0, gp = gpar(col = colors[5]))
-    }
-  )
-  
-  
-  # Turn off clipping and draw plot
-  gb <- ggplot_build(plot) # Puts plot into a usable format
-  gt <- ggplot_gtable(gb) # puts grobs into a table to allow the object to be manipulated
-  gt$layout$clip[gt$layout$name=="panel"] <- "off" # removes clipping with graph borders 
-  gg <- arrangeGrob(gt, top = grobs, padding = unit(2.6, "line")) # places above grobs into a gtable
-  grid.newpage() # makes a blank graphing window for ggplot2
-  grid.draw(gg) # draws the plot
-  
-  # Save the plot
-  if(!is.null(filename)) ggsave(filename, plot = gg, width = save_width, height = save_height)
-}
+source('title_no_clip.R')
 
 
 pop_pyr_format <- function(data, filter_cat = NA){ 
@@ -164,14 +95,22 @@ grouped %>%
   theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
   no_legend()
   
-title_align_no_clip(title_segments = c('Percent of ', 'men', ' and ', 'women ', 'within each age group'),
-                    colors = c('Grey25', men.scale[4], 'Grey25', women.scale[4], 'Grey25'),
-                    axis_title_color = 'Grey40', 
-                    axis_text_color =  'Grey40',
-                    axis_x_line_color = 'Grey35',
-                    axis_y_line_color = 'Grey35', 
-                    tick_color = 'Grey35')
 
+title_default <- function(plot = last_plot(), title_segments, colors){
+  title_align_no_clip(
+    plot = plot,
+    title_segments = title_segments,
+    colors = colors,
+    axis.title.color = 'Grey40', 
+    axis.text.color =  'Grey40',
+    axis.x.line.color = 'Grey35',
+    axis.y.line.color = 'Grey35', 
+    tick.color = 'Grey35')
+}
+
+title_default(title_segments = c('Percent of ', 'men', ' and ', 'women ', 'within each age group'),
+                    colors = c('Grey25', men.scale[4], 'Grey25', women.scale[4], 'Grey25'))
+                   
 
 
 #highlight ends
@@ -199,13 +138,8 @@ grouped %>%
            color = 'Grey50', size = 3.8,
            label = c('Women have longer \nlife expectancies than \nmen'))
 
-title_align_no_clip(title_segments = c('These data points are caused by ', 'birth', ' and ', 'life expectancy ', 'phenomena.'),
-                    colors = c('Grey40', 'Grey20', 'Grey40', 'Grey20', 'Grey40'),
-                    axis_title_color = 'Grey40', 
-                    axis_text_color =  'Grey40',
-                    axis_x_line_color = 'Grey35',
-                    axis_y_line_color = 'Grey35', 
-                    tick_color = 'Grey35')
+title_default(title_segments = c('These data points are caused by', 'birth ', 'and ', 'life expectancy ', 'phenomena.'),
+                    colors = c('Grey40', 'Grey20', 'Grey40', 'Grey20', 'Grey40'))
 
 #highlight target
 target <- grouped %>% 
@@ -262,29 +196,15 @@ subplot <- pop %>%
   no_y_axis() + 
   no_x_text() + 
   no_legend() + 
-  theme()
+  theme() + 
+  ggtitle('Percent of men and women')
+#Remove some axis text from the base plot 
 
-ggdraw(target) + draw_plot(subplot, x = -0.25, y = -0.25, scale = 0.25)
+title_default(plot = target,
+              title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
+              colors = c('Grey40', 'Grey27', 'Grey40', 'Grey27')) +
+  draw_plot(subplot, x = -0.25, y = -0.25, scale = 0.25)
 
-
-title_align_no_clip(title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
-                    colors = c('Grey40', 'Grey27', 'Grey40', 'Grey27'),
-                    filename = 'highlight_target.jpeg',
-                    axis_title_color = 'Grey40', 
-                    axis_text_color =  'Grey40',
-                    axis_x_line_color = 'Grey35',
-                    axis_y_line_color = 'Grey35', 
-                    tick_color = 'Grey35',
-                    plot_margin = unit(c(.9, 1, -.2, -.2), "cm"),
-                    nudge_x = 1.9) 
-
-
-
-axis_title_color = 'Grey40', 
-axis_text_color =  'Grey40',
-axis_x_line_color = 'Grey35',
-axis_y_line_color = 'Grey35', 
-tick_color = 'Grey35'
 
 
 # Population by Nationality--------------------------------------------------------------------------------------------
