@@ -128,7 +128,8 @@ grouped %>%
              size = 6, position = position_dodge(width = .5)) + 
   labs(x = '\nAge range', y = 'Percent within age group\n') + 
   scale_color_manual(values = c(men.scale[5], women.scale[5])) +
-  scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
+  scale_y_continuous(limits = c(0, .7),expand = c(0,0)) + 
+  scale_x_discrete(labels = c('0 - 4', '5 - 9', rep(' ', 13), '75 - 79', '80 - 84', '85+')) +
   theme(axis.text.x = element_text(angle = 80, vjust = .2, hjust = .2)) + 
   no_legend() + 
   annotate(geom = 'text', x = .8, y = .59, hjust = 0, 
@@ -142,7 +143,7 @@ title_default(title_segments = c('These data points are caused by', 'birth ', 'a
                     colors = c('Grey40', 'Grey20', 'Grey40', 'Grey20', 'Grey40'))
 
 #highlight target
-target <- grouped %>% 
+highlight_target <- grouped %>% 
   mutate(condition = prop >= 0.504 & sex == "female" & age_range != '75 - 79' & age_range != '80 - 84' & age_range != '85+' & age_range != '60 - 64') %>%
   mutate(condition = any(condition)) %>% 
   ggplot(aes(x = age_range, y = prop, color = sex, group = sex)) +
@@ -168,6 +169,9 @@ target <- grouped %>%
   labs(x = '\nAge range', y = 'Percent within age group\n') + 
   scale_color_manual(values = c(men.scale[5], women.scale[5])) +
   scale_y_continuous(limits = c(0, .7),expand = c(0,0)) +
+  scale_x_discrete(labels = c(rep(' ', 4), '20 - 24', '25 - 29', '30 - 34', 
+                                           '35 - 39', '40 - 44', '45 - 49', 
+                                           '50 - 54', '55 - 59', rep(' ', 6))) + 
   theme(axis.text.x = element_text(angle = 90),
         axis.title = element_text(color = 'Grey40', size = 14),
         axis.title.y = element_text(hjust = .94),
@@ -192,18 +196,17 @@ subplot <- pop %>%
   geom_text(aes(label = percent(prop)), 
             color = 'white', vjust = 1.5) + 
   scale_y_continuous(expand = c(0,0)) + 
-  scale_fill_manual(values = c(men.scale[4], women.scale[4]))+
-  no_y_axis() + 
-  no_x_text() + 
+  scale_fill_manual(values = c(men.scale[3], women.scale[3])) +
   no_legend() + 
-  theme() + 
-  ggtitle('Percent of men and women')
+  no_axes() + 
+  theme(plot.title = element_text(color = 'grey60', size = 12.5, hjust = 0)) + 
+  ggtitle('  Percent of women and \n  men in highlighted data')
 #Remove some axis text from the base plot 
 
-title_default(plot = target,
+title_default(plot = highlight_target,
               title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
               colors = c('Grey40', 'Grey27', 'Grey40', 'Grey27')) +
-  draw_plot(subplot, x = -0.25, y = -0.25, scale = 0.25)
+  draw_plot(subplot, x = .3, y = -.144, scale = 0.25)
 
 
 
@@ -213,16 +216,18 @@ pop %>%
   group_by(nationality) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(condition = nationality == 'Filipino' | nationality == 'Indonesian' |
-                     nationality == 'Chinese (Temp Resident)' | nationality == 'British' | nationality == 'Indian') %>% 
+                     nationality == 'Chinese (Other)') %>% 
   ggplot(aes(fct_reorder(nationality, population), population)) + 
   geom_col(fill = 'grey 89') + 
   geom_col(aes(alpha = condition), fill = '#807DBA') +
   scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0)) + 
-  theme_pub() + 
-  no_legend() + 
-  theme(axis.text = element_text(color = 'Grey 48', angle = 30, hjust = 1.1, vjust = -16))
+  theme_pub(axis_line = TRUE) + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1.1)) + 
+  labs(x = '\nNationality', y = 'Population\n') + 
+  no_legend()
 
-
+pop_by_nationality <- title_default(title_segments = c('The biggest nationalities have significantly more women than men', ''),
+              colors = c('grey27', 'grey27'))
 #There are 7,336,585 people in Hong Kong
 sum(pop$population, na.rm = TRUE) 
 #There are 6,646,415 Chinese Residents
@@ -264,15 +269,13 @@ grouped <- pop %>%
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population))
 
-pop_by_nation <- pop %>% 
+pop %>% 
   group_by(nationality, sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
   mutate(condition = nationality == 'Filipino' | 
                      nationality == 'Indonesian' |
-                     nationality == 'Chinese (Temp Resident)' | 
-                     nationality == 'British' | 
-                     nationality == 'Indian') %>% 
+                     nationality == 'Chinese (Other)') %>% 
   ggplot(aes(x = fct_reorder2(nationality, sex, -prop), y = prop, fill = sex)) + 
   geom_col(width = .8, fill = 'grey 90') +
   geom_col(aes(alpha = condition, fill = sex), width = .8) +
@@ -280,13 +283,12 @@ pop_by_nation <- pop %>%
   theme_pub(axis_line = TRUE) + 
   no_gridlines() + 
   scale_y_discrete(expand = c(0,0)) +
-  scale_x_discrete(labels = c("British", "Pakistani", "American", "Australian", "Nepalese", "Other", "Japanese", 
-                              "Chinese HK", "Indian", "Other Chinese ", "Thai", 'Filipino', "Indonesian")) + 
   no_y_line() + 
   no_y_text() + 
   no_y_ticks() +
-  geom_text(data = subset(grouped, sex == 'female'), aes(x = nationality, y = prop, 
-                                                         fill = sex, label = percent(prop)), 
+  geom_text(data = subset(grouped, sex == 'female'), 
+            aes(x = nationality, y = prop, 
+                fill = sex, label = percent(prop)), 
             vjust = 1.3, color = 'Grey95', size = 3.5) + 
   no_legend() + 
   labs(x = '\nNationality', y = 'Percent of women in group\n') + 
@@ -295,10 +297,12 @@ pop_by_nation <- pop %>%
         axis.ticks.length = unit(0, "cm")) + 
   annotate('text', x = 13.33, y = 1.01, label = '---------100%', color = 'grey 50', size = 4)
 
-title_align_no_clip(plot = pop_by_nation, 
-                    title_segments = c('4 of the 5 largest nationalities are dominated by ', 'Women'),
-                    colors = c('Grey25', women.scale[5]),
-                    filename = 'bar_nation.jpeg')
+
+title_default(title_segments = c('What percent of these nationalities are comprised of women?', ''),
+              colors = c('Grey40', 'grey40')) 
+
+
+
 
 
 
@@ -333,7 +337,7 @@ bar_nationality <- pop %>%
   no_y_axis() + 
   no_legend() 
 
-gganimate(bar_nationality, 'bars.gif')
+gganimate(bar_nationality)
 
 
 ggdraw(a) + draw_plot(temp1, x = -0.25, y = -0.25, scale = .5)
@@ -364,10 +368,8 @@ overall_pop_dist <- pop_pyr_format(pop) %>%
   annotate(geom = 'text', x = 14.2, y = .065, 
            label = 'Male', color = men.scale[[4]], size = 3.5) 
 
-title_align_no_clip(plot = overall_pop_dist, 
-                    title_segments = c('Hong Kong Population Pyramid'),
-                    colors = c('Grey25'),
-                    filename = 'overall_pop_dist.jpeg')
+title_default(title_segments = c('Hong Kong Population Pyramid'),
+              colors = c('Grey25'))
 
 
 #annotate to add mean ages of men and women?
@@ -395,16 +397,29 @@ temp2 <- pop %>%
 
 temp2$population <- temp2$population - temp1$population
 
-temp2 %>% 
-  ggplot(aes(x = fct_reorder(nationality, population), y = population, label = population)) + 
-  geom_point(stat = 'identity', fill = "black", size = 1)  +
-  geom_segment(aes(y = 0, x = nationality, yend = population, xend = nationality), 
-               color = "black") +
-  labs(title = "The number of women minus the number of men by nationality") + 
-  coord_flip()
 
-ggsave('women-men.jpeg', plot = last_plot())
-#group negatives together? reorder from inc to dec
+temp2 %>% 
+  mutate(condition = population > 0) %>%
+  mutate(condition2 = population > 20000 & population < 190000) %>% 
+  ggplot(aes(x = fct_reorder(nationality, population), y = population, label = population)) + 
+  geom_point(stat = 'identity', color = men.scale[6], size = 2)  +
+  geom_segment(aes(y = 0, x = nationality, yend = population, xend = nationality), 
+               color = men.scale[6]) +
+  geom_segment(aes(alpha = condition, y = 0, x = nationality, yend = population, xend = nationality), 
+               color = women.scale[3]) +
+  geom_segment(aes(alpha = condition2, y = 0, x = nationality, yend = population, xend = nationality), 
+               color = women.scale[6]) +
+  geom_point(aes(alpha = condition), stat = 'identity', color = women.scale[4], size = 2)  +
+  geom_point(aes(alpha = condition2), stat = 'identity', color = women.scale[7], size = 3)  +
+  labs(x = 'Nationalities\n', y = '\nNumber of excess men or women') + 
+  coord_flip() + 
+  no_legend() 
+
+temp2 <- title_default(title_segments = c('Numerical difference between men and women', ''),
+              colors = c('Grey27', 'grey27')) 
+
+plot_grid(temp2, pop_by_nationality, pop_by_nation, ncol = 1, nrow = 3)
+
 
 
 # Only Helpers-------------------------------------------------------------------------------------------------------------------
