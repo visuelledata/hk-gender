@@ -7,7 +7,7 @@ library(grid)
 library(gridExtra)
 
 # Setup--------------------------------------------------------------------------------------------------------------------------
-pop <- read_csv("D:/rproj/hk-gender/preclean-excel.csv", #this data is by nationality
+pop <- read_csv("precleaned_data/preclean-excel.csv", #this data is by nationality
                                   na = '-',
                                   col_types = cols(Australian = col_integer(), 
                                                    Indonesian = col_integer(), 
@@ -35,9 +35,9 @@ sex.scale <- c("female" = "#FB8072", "male" = "#80B1D3")
 
 
 # Functions-----------------------------------------------------------------------------------------------------------------
-source('annotate_color.R') #load annotate_color()
+source('functions/annotate_color.R') #load annotate_color()
 
-source('title_no_clip.R')
+source('functions/title_no_clip.R')
 
 
 pop_pyr_format <- function(data, filter_cat = NA){ 
@@ -59,19 +59,6 @@ pop_pyr_format <- function(data, filter_cat = NA){
     return(pop_pyr_data)
   }
 }
-
-# Exploratory data analysis------------------------------------------------------------------------------------------
-
-pop %>%  
-  filter(age_range != '0 - 4' & age_range != '80 - 84' & age_range != '85+') %>%
-  group_by(age_range, sex, nationality) %>%
-  summarize(population = sum(population),
-            prop = sum(prop)) %>% 
-  ggplot() + 
-  geom_col(aes(x = age_range, y = prop, fill = sex), position = 'dodge') + 
-  facet_wrap(~nationality, scale = 'free_y') #add this as an interactive graph
-  
-
 
 
 
@@ -201,7 +188,6 @@ subplot <- pop %>%
   no_axes() + 
   theme(plot.title = element_text(color = 'grey60', size = 12.5, hjust = 0)) + 
   ggtitle('  Percent of women and \n  men in highlighted data')
-#Remove some axis text from the base plot 
 
 title_default(plot = highlight_target,
               title_segments = c('From now on, ', 'this data ', 'will be our ', 'focus'),
@@ -475,55 +461,40 @@ pop %>%
 sum(filter(with_helpers, sex == 'male' & (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE) / sum(filter(with_helpers, (age_range == '20 - 24' | age_range == '25 - 29'| age_range == '30 - 34' | age_range == '35 - 39'| age_range == '40 - 44' | age_range == '45 - 49'| age_range == '50 - 54' | age_range == '55 - 59'))$population, na.rm = TRUE)
 
 
-
-# Misc-------------------------------------------------------------------------------------------------------------
-
-####look into
-#pop %>%  
-  group_by(age_range, sex) %>% 
+pop %>% 
+  group_by(sex) %>% 
   summarize(population = sum(population, na.rm = TRUE)) %>% 
   mutate(prop = population / sum(population)) %>% 
-  ggplot() + 
-  geom_col(aes(x = age_range, y = prop, fill = sex)) +
-  annotate_color(x = 5, y = .06, fontface = 'bold', size = 7,
-                 labels = 'I go to school today and have', 
-                 colors = c('blue', 'red', 'green', 'pink', 'grey', 'orange', 'pink')) +
-  coord_polar(theta = "y") + 
-  geom_text(aes(x = age_range, y = prop, label = age_range)) + 
-  coord_flip()
+  ggplot(aes(x = sex, y = prop, fill = sex)) + 
+  geom_col(width = .7) + 
+  geom_text(aes(label = percent(prop)), 
+            vjust = 1.8, size = 5, color = 'white') +
+  labs(x = '\nGender', y = 'Total percent\n') + 
+  scale_fill_manual(values = c(men.scale[4], women.scale[4])) + 
+  scale_y_continuous(limits = c(0, .7), expand = c(0,0), labels = percent) + 
+  no_legend() + 
+  no_x_ticks()
 
-  
-  
-grouped <- pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
-  mutate(prop = population / sum(population))
-  
-pop %>%  
-  group_by(age_range, sex) %>% 
-  summarize(population = sum(population, na.rm = TRUE)) %>% 
+plot_with_helpers <- title_default(title_segments = c('Percent of men and women including Domestic Helpers', ''),
+                                   colors = c('Grey40', 'Grey40'))
+
+without_helpers %>%
+  group_by(sex) %>% 
+  summarize(population = sum(population, na.rm = TRUE)) %>%
   mutate(prop = population / sum(population)) %>% 
-  ggplot() + 
-  geom_col(aes(x = age_range, y = prop, fill = sex), width = .97) +
-  annotate_color(x = 5.4, y = .06, size = 5.5, default_color = 'black',
-                   labels = 'In Hong Kong,                                      ', 
-                   colors = c('Grey30')) + 
-    annotate_color(x = 3, y = .06, size = 4.5, default_color = 'grey40',
-                   labels = 'Women outnumber    Men in most age groups', 
-                   colors = c('black', '', '', '', '', 'black')) +
-    coord_polar(theta = "y") + 
-    theme_pub() +
-    no_legend() + 
-    no_y_axis() +
-    no_x_axis() + 
-    scale_y_continuous(limits = c(0, 1), expand = c(0,0)) + 
-    geom_text(data = subset(grouped, sex == 'male'), 
-              aes(x = age_range, y = prop, label = age_range), 
-              angle = 16, color = 'grey20', size = 3.2,
-              hjust = -.1, position = position_dodge(width=.5)) +
-    geom_hline(yintercept = .5, linetype = 'dashed', color = 'grey35') +
-    theme(plot.margin = unit(c(0,0, 0, 0), 'cm'))
-  ggsave('circleplot.jpg', plot = last_plot())
-  
-  
+  ggplot(aes(x = fct_reorder(sex, prop), y = prop, fill = fct_reorder(sex, prop))) + 
+  geom_col(width = .7) + 
+  geom_text(aes(label = percent(prop)), 
+            vjust = 1.8, size = 5, color = 'white') + 
+  labs(x = '\nGender', y = 'Total percent\n') + 
+  scale_fill_manual(values = c(men.scale[4], women.scale[4])) + 
+  scale_y_continuous(limits = c(0, .7), expand = c(0,0), labels = percent) + 
+  no_legend() + 
+  no_x_ticks()
+
+plot_without_helpers <- title_default(title_segments = c('Percent of men and women excluding Domestic Helpers', ''),
+                                      colors = c('Grey40', 'Grey40'))
+
+plot_grid(plot_with_helpers, plot_without_helpers)
+
   

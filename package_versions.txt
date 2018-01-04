@@ -1,0 +1,12 @@
+rmarkdown_1.6         
+cowplot_0.8.0    
+scales_0.4.1    
+SciencesPo_1.4.1 
+forcats_0.2.0    
+dplyr_0.7.1      
+purrr_0.2.2.2    
+readr_1.1.1      
+tidyr_0.6.3     
+tibble_1.3.3     
+ggplot2_2.2.1    
+tidyverse_1.1.1 
